@@ -2,7 +2,6 @@ package com.thepuzzlequest.puzzlequest.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -17,28 +16,25 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -114,7 +110,7 @@ fun SignInScreen(app: AppViewModel) {
                         .semantics { contentType = ContentType.Password }
                         .testTag("sign-in.password"),
             )
-            state.failure?.let { FailureMessage(it) }
+            state.failure?.let { ErrorMessage(stringResource(it.message), Modifier.testTag("sign-in.error")) }
             val signingIn = stringResource(R.string.signing_in)
             Button(
                 onClick = signIn,
@@ -131,26 +127,14 @@ fun SignInScreen(app: AppViewModel) {
                     Text(stringResource(R.string.sign_in))
                 }
             }
-        }
-    }
-}
-
-/**
- * Why signing in failed: an icon as well as color, so it doesn't rely on color
- * alone, and read out by TalkBack as soon as it's shown (a live region).
- */
-@Composable
-private fun FailureMessage(failure: SignInFailure) {
-    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier =
-                Modifier
-                    .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
-                    .testTag("sign-in.error"),
-        ) {
-            Icon(painterResource(R.drawable.ic_error), contentDescription = null)
-            Text(stringResource(failure.message), style = MaterialTheme.typography.bodyMedium)
+            // Signing up is on the website until the app has it.
+            val uriHandler = LocalUriHandler.current
+            TextButton(
+                onClick = { uriHandler.openUri(app.api.server) },
+                modifier = Modifier.align(Alignment.CenterHorizontally).testTag("sign-in.sign-up"),
+            ) {
+                Text(stringResource(R.string.sign_up_on_website))
+            }
         }
     }
 }

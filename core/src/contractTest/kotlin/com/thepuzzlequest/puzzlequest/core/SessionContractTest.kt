@@ -24,19 +24,12 @@ import java.util.UUID
  * are skipped.
  */
 class SessionContractTest {
-    private object TestServer {
-        val url: String? = System.getenv("PQ_TEST_SERVER_URL")
-        val userName: String get() = System.getenv("PQ_TEST_USER_NAME")
-        val password: String get() = System.getenv("PQ_TEST_PASSWORD")
-        val displayName: String get() = System.getenv("PQ_TEST_DISPLAY_NAME") ?: userName
-    }
-
     @Before
     fun needsTheTestServer() {
-        assumeTrue("Set PQ_TEST_SERVER_URL (see scripts/start-test-server.sh)", TestServer.url != null)
+        assumeTrue("Set PQ_TEST_SERVER_URL (see scripts/start-test-server.sh)", TestSite.url != null)
     }
 
-    private fun api(tokens: TokenStore = InMemoryTokenStore()) = PuzzleQuestApi(TestServer.url!!, tokens)
+    private fun api(tokens: TokenStore = InMemoryTokenStore()) = TestSite.api(tokens)
 
     /** A user name of its own, since failed sign-ins are limited per name. */
     private fun nobody() = "nobody-${UUID.randomUUID().toString().take(8)}"
@@ -56,9 +49,13 @@ class SessionContractTest {
         runTest {
             val tokens = InMemoryTokenStore()
             val api = api(tokens)
-            val (token, user) = api.signIn(TestServer.userName, TestServer.password)
+            val (token, user) = api.signIn(TestSite.userName, TestSite.password)
             assertFalse(token.isEmpty())
-            assertEquals(SignedInUser(TestServer.userName, TestServer.displayName, Role.Player), user)
+            // Signed up by the test server, and never verified.
+            assertEquals(
+                SignedInUser(TestSite.userName, TestSite.displayName, Role.Player, emailVerified = false),
+                user,
+            )
 
             tokens.save(token)
             assertEquals(user, api.currentUser())
@@ -74,14 +71,14 @@ class SessionContractTest {
         runTest {
             val tokens = InMemoryTokenStore()
             val session = SessionStore(api(tokens), tokens)
-            session.signIn(TestServer.userName, TestServer.password)
+            session.signIn(TestSite.userName, TestSite.password)
             assertNotNull(tokens.read())
 
             // As at the next launch.
             val next = SessionStore(api(tokens), tokens)
             next.restore()
             val state = next.state.value as SessionStore.State.SignedIn
-            assertEquals(TestServer.userName, state.user.userName)
+            assertEquals(TestSite.userName, state.user.userName)
 
             next.signOut()
             assertNull(tokens.read())
@@ -93,7 +90,7 @@ class SessionContractTest {
         runTest {
             val tokens = InMemoryTokenStore()
             val api = api(tokens)
-            val (token, _) = api.signIn(TestServer.userName, TestServer.password)
+            val (token, _) = api.signIn(TestSite.userName, TestSite.password)
             tokens.save(token)
             api.signOut()
             // Still kept here, as if signed out elsewhere.
@@ -136,7 +133,7 @@ class SessionContractTest {
 
     @Test
     fun `the server serves the version of the API the app is pinned to`() {
-        val request = Request.Builder().url("${TestServer.url}/api/v1/openapi.json").build()
+        val request = Request.Builder().url("${TestSite.url}/api/v1/openapi.json").build()
         val served =
             PuzzleQuestApi.defaultHttpClient.newCall(request).execute().use {
                 Json.decodeFromString<JsonObject>(it.body.string())

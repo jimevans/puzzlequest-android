@@ -15,6 +15,8 @@ openApiGenerate {
     inputSpec.set(file("openapi.json").absolutePath)
     outputDir.set(generatedApi.get().asFile.absolutePath)
     packageName.set("com.thepuzzlequest.puzzlequest.api")
+    // Start afresh each time, so a class the description no longer makes goes.
+    cleanupOutput.set(true)
     library.set("jvm-okhttp4")
     configOptions.putAll(
         mapOf(
@@ -48,7 +50,8 @@ tasks.compileKotlin {
 dependencies {
     api(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.okhttp)
+    // Part of its API: PuzzleQuestApi takes and shares an OkHttpClient.
+    api(libs.okhttp)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

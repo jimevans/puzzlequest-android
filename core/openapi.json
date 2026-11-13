@@ -10165,7 +10165,8 @@
             "required": [
               "message",
               "connectionId"
-            ]
+            ],
+            "title": "LiveUpdateConnection"
           },
           {
             "type": "object",
@@ -10196,7 +10197,8 @@
               "entryId",
               "puzzleName",
               "activationTime"
-            ]
+            ],
+            "title": "LiveUpdatePuzzleActivated"
           },
           {
             "type": "object",
@@ -10236,7 +10238,8 @@
               "solutionText",
               "endTime",
               "questComplete"
-            ]
+            ],
+            "title": "LiveUpdatePuzzleSolved"
           },
           {
             "type": "object",
@@ -10271,7 +10274,8 @@
               "puzzleName",
               "displayName",
               "startTime"
-            ]
+            ],
+            "title": "LiveUpdatePuzzleStarted"
           },
           {
             "type": "object",
@@ -10319,7 +10323,8 @@
               "hintText",
               "timePenaltySeconds",
               "nextHint"
-            ]
+            ],
+            "title": "LiveUpdateHintRevealed"
           },
           {
             "type": "object",
@@ -10340,7 +10345,8 @@
               "message",
               "questName",
               "entryId"
-            ]
+            ],
+            "title": "LiveUpdateQuestUpdated"
           },
           {
             "type": "object",
@@ -10361,7 +10367,8 @@
               "message",
               "questName",
               "entryId"
-            ]
+            ],
+            "title": "LiveUpdateMessageSent"
           },
           {
             "type": "object",
@@ -10382,7 +10389,8 @@
               "message",
               "questName",
               "entryId"
-            ]
+            ],
+            "title": "LiveUpdateChallengeAnswered"
           },
           {
             "type": "object",
@@ -10394,7 +10402,8 @@
             },
             "required": [
               "message"
-            ]
+            ],
+            "title": "LiveUpdateQuestsChanged"
           }
         ],
         "description": "A message from the live-update websocket, /api/v1/updates, to a client: which kind is in its message field.",
@@ -10424,7 +10433,8 @@
               "questName",
               "ticket"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "title": "LiveUpdateQuestSubscription"
           },
           {
             "type": "object",
@@ -10448,7 +10458,8 @@
               "userName",
               "ticket"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "title": "LiveUpdateUserSubscription"
           }
         ],
         "description": "The message a client sends to the live-update websocket: with questName, to follow every update of a quest; with userName, to hear when the list of quests the user plays changes. Sending another follows that instead. A ticket that isn't valid for it closes the connection."

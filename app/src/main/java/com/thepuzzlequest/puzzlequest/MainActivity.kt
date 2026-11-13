@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PuzzleQuestTheme {
-                RootScreen(app)
+                RootScreen(app, uiTesting = BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_UI_TESTING, false))
             }
         }
     }
@@ -39,5 +39,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         /** Debug builds only: forget any session before starting. */
         const val EXTRA_SIGNED_OUT = "PQ_SIGNED_OUT"
+
+        /** Debug builds only: show the UI tests what they wait on, such as whether live updates are connected. */
+        const val EXTRA_UI_TESTING = "PQ_UI_TESTING"
     }
 }

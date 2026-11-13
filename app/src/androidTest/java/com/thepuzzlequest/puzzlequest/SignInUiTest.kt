@@ -1,26 +1,19 @@
 package com.thepuzzlequest.puzzlequest
 
-import android.content.Intent
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertTextEquals
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
-import androidx.test.core.app.ActivityScenario
-import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.util.UUID
 
 /**
  * The sign-in journey in the app, against the real test server. Controls are
  * found by their test tags (such as `sign-in.user-name`), which stay put when
  * wording changes.
  */
-@OptIn(ExperimentalTestApi::class)
 class SignInUiTest {
     // An empty rule: each test launches the app itself, as a person would.
     @get:Rule val compose = createEmptyComposeRule()
@@ -28,58 +21,61 @@ class SignInUiTest {
     @Before
     fun needsTheTestServer() = TestServer.require()
 
-    /** The app, using the test server, starting signed out unless told otherwise. */
-    private fun launch(signedOut: Boolean = true): ActivityScenario<MainActivity> {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val intent =
-            Intent(context, MainActivity::class.java)
-                .putExtra(ServerAddress.EXTRA_SERVER_URL, TestServer.url)
-                .putExtra(MainActivity.EXTRA_SIGNED_OUT, signedOut)
-        return ActivityScenario.launch(intent)
-    }
-
-    private fun waitFor(tag: String) = compose.waitUntilExactlyOneExists(hasTestTag(tag), timeoutMillis = 30_000)
-
-    private fun signIn(
-        userName: String,
-        password: String,
-    ) {
-        waitFor("sign-in.user-name")
-        compose.onNodeWithTag("sign-in.user-name").performTextInput(userName)
-        compose.onNodeWithTag("sign-in.password").performTextInput(password)
-        compose.onNodeWithTag("sign-in.submit").performClick()
-    }
-
     @Test
     fun signInStaySignedInAndSignOut() {
-        launch().use {
-            signIn(TestServer.userName, TestServer.password)
-            waitFor("signed-in.name")
-            compose.onNodeWithTag("signed-in.name").assertTextEquals("Signed in as ${TestServer.displayName}")
+        launchApp().use {
+            compose.signIn(TestServer.userName, TestServer.password)
+            compose.waitFor("home.list")
+            compose.onNodeWithText("Your quests").assertExists()
         }
 
         // The next launch picks up the session kept in the Keystore.
-        launch(signedOut = false).use {
-            waitFor("signed-in.name")
-            compose.onNodeWithTag("signed-in.sign-out").performClick()
-            waitFor("sign-in.user-name")
+        launchApp(signedOut = false).use {
+            compose.waitFor("home.list")
+            // Signing out is in the account menu, which says who is signed in.
+            compose.onNodeWithTag("home.account").performClick()
+            compose.waitFor("home.signed-in-as", 10_000)
+            compose.onNodeWithTag("home.signed-in-as").assertTextEquals("Signed in as ${TestServer.displayName}")
+            compose.onNodeWithTag("home.sign-out").performClick()
+            compose.waitFor("sign-in.user-name")
         }
 
         // And stays signed out.
-        launch(signedOut = false).use {
-            waitFor("sign-in.user-name")
+        launchApp(signedOut = false).use {
+            compose.waitFor("sign-in.user-name")
         }
     }
 
     @Test
     fun wrongPasswordIsExplained() {
-        launch().use {
+        launchApp().use {
             // A user name of its own, since failed sign-ins are limited per name.
-            signIn("nobody-${UUID.randomUUID().toString().take(8)}", "wrong")
-            waitFor("sign-in.error")
+            compose.signIn(TestServer.unique("nobody"), "wrong")
+            compose.waitFor("sign-in.error")
             compose
-                .onNodeWithTag("sign-in.error", useUnmergedTree = false)
+                .onNodeWithTag("sign-in.error")
                 .assertTextEquals("That user name and password don't match an account. Check them and try again.")
+        }
+    }
+
+    @Test
+    fun signingUpIsOnTheWebsite() {
+        launchApp().use {
+            compose.waitFor("sign-in.sign-up")
+            compose.onNodeWithTag("sign-in.sign-up").assertTextEquals("New to PuzzleQuest? Sign up on the website")
+        }
+    }
+
+    @Test
+    fun staffAndAdministratorsAreSentToTheWebsite() {
+        launchApp().use {
+            compose.signIn(TestServer.adminUserName, TestServer.adminPassword)
+            compose.waitFor("website.note")
+            compose.onNodeWithTag("website.open").assertExists()
+            compose.onNodeWithText("Your quests").assertDoesNotExist()
+
+            compose.onNodeWithTag("website.sign-out").performClick()
+            compose.waitFor("sign-in.user-name")
         }
     }
 }

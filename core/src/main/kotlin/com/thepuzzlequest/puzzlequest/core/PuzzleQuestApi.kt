@@ -1,6 +1,8 @@
 package com.thepuzzlequest.puzzlequest.core
 
+import com.thepuzzlequest.puzzlequest.api.apis.EmailVerificationApi
 import com.thepuzzlequest.puzzlequest.api.apis.SessionsApi
+import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientError
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientException
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerError
@@ -26,18 +28,35 @@ import java.util.concurrent.TimeUnit
  * @param tokens where the session's token is kept, sent with every request.
  */
 class PuzzleQuestApi(
-    server: String,
+    /** The site, such as https://thepuzzlequest.com. */
+    val server: String,
     private val tokens: TokenStore,
     http: OkHttpClient = defaultHttpClient,
     /** Where the generated client's blocking calls run. */
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    init {
+        // Before any call: see ApiJson.
+        ApiJson.setUp()
+    }
+
     private val baseUrl = server.trimEnd('/') + "/api/v1"
+
+    /**
+     * The live-update websocket's address: `/api/v1/updates` on the site, over
+     * `wss:` (or `ws:` for a site on plain HTTP, such as a local one).
+     */
+    val liveUpdatesUrl: String =
+        baseUrl.replaceFirst(Regex("^http"), "ws") + "/updates"
 
     // The generated classes each cover one tag of the API; they share the
     // token, read afresh for every request.
     private val sessions =
         SessionsApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
+    private val users =
+        UsersApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
+    private val emailVerification =
+        EmailVerificationApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
 
     /** Signs in as an app, which is given the session's token to keep. */
     suspend fun signIn(
@@ -64,6 +83,27 @@ class PuzzleQuestApi(
     /** Ends the session whose token is sent. */
     suspend fun signOut() {
         call { sessions.signOut() }
+    }
+
+    /**
+     * Every quest the user plays whose entry has started, fetching each page
+     * of the list in turn.
+     */
+    suspend fun userQuests(userName: String): List<QuestSummary> =
+        allPages { after ->
+            val page = call { users.listUserQuests(userName, after = after) }
+            page.items.map(::QuestSummary) to page.next
+        }
+
+    /**
+     * A ticket for one connection to the live-update websocket to follow the
+     * user's list of quests. Each can be used once.
+     */
+    suspend fun userLiveTicket(userName: String): String = call { users.createUserLiveTicket(userName) }.ticket
+
+    /** Sends the user another email with the link that verifies their address. */
+    suspend fun sendVerificationEmail(userName: String) {
+        call { emailVerification.sendVerificationEmail(userName) }
     }
 
     /**
@@ -158,4 +198,22 @@ class PuzzleQuestApi(
         val title: String? = null,
         val detail: String? = null,
     )
+}
+
+/**
+ * Gets everything in one of the API's paged lists: each page names the cursor
+ * (`next`) to send as `after` for the page that follows, and null on the last.
+ *
+ * @param fetchPage fetches the page after a cursor, or the first page for
+ *   null, returning its items and the next cursor.
+ */
+internal suspend fun <T> allPages(fetchPage: suspend (after: String?) -> Pair<List<T>, String?>): List<T> {
+    val items = mutableListOf<T>()
+    var after: String? = null
+    do {
+        val (page, next) = fetchPage(after)
+        items += page
+        after = next
+    } while (after != null)
+    return items
 }
