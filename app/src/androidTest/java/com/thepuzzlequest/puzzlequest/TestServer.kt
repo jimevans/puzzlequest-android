@@ -115,15 +115,28 @@ object TestServer {
     }
 }
 
-/** The app, using the test server, starting signed out unless told otherwise. */
-fun launchApp(signedOut: Boolean = true): ActivityScenario<MainActivity> {
+/**
+ * The app, using the test server, starting signed out unless told otherwise.
+ *
+ * @param fixedServer whether to set the server for the run (PQ_SERVER_URL);
+ *   without it, the app uses the server Options says, which starts as a new
+ *   install's (Production).
+ */
+fun launchApp(
+    signedOut: Boolean = true,
+    fixedServer: Boolean = true,
+): ActivityScenario<MainActivity> {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     val intent =
         Intent(context, MainActivity::class.java)
-            .putExtra(ServerAddress.EXTRA_SERVER_URL, TestServer.url)
-            .putExtra(MainActivity.EXTRA_SIGNED_OUT, signedOut)
+            .putExtra(AppServer.EXTRA_SIGNED_OUT, signedOut)
             // Shows the home screen's live-update state to the tests.
             .putExtra(MainActivity.EXTRA_UI_TESTING, true)
+    if (fixedServer) {
+        intent.putExtra(AppServer.EXTRA_SERVER_URL, TestServer.url)
+    } else {
+        intent.putExtra(AppServer.EXTRA_RESET_SERVER, true)
+    }
     return ActivityScenario.launch(intent)
 }
 

@@ -78,12 +78,13 @@ data class QuestRoute(
 @Composable
 fun HomeScreen(
     app: AppViewModel,
+    server: AppViewModel.Server,
     user: SignedInUser,
     uiTesting: Boolean,
 ) {
-    // One HomeViewModel for each player signed in; `key` keeps a new player's
-    // from reusing the last one's.
-    val home = viewModel(key = "home-${user.userName}") { HomeViewModel(user, app.session) }
+    // One HomeViewModel for each player signed in to each server; `key` keeps
+    // a new player's, or a new server's, from reusing the last one's.
+    val home = viewModel(key = "home-${server.switches}-${user.userName}") { HomeViewModel(user, server.session) }
     val navigation = rememberNavController()
     NavHost(navigation, startDestination = QuestsRoute) {
         composable<QuestsRoute> {
@@ -128,7 +129,7 @@ private fun QuestList(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.your_quests)) },
-                actions = { AccountMenu(user, onSignOut = app::signOut) },
+                actions = { AccountMenu(user, onSignOut = app::signOut, onOptions = app::openOptions) },
             )
         },
     ) { padding ->
@@ -184,11 +185,12 @@ private fun QuestList(
     }
 }
 
-/** Signing out, in a menu that says who is signed in. */
+/** Signing out and Options, in a menu that says who is signed in. */
 @Composable
 private fun AccountMenu(
     user: SignedInUser,
     onSignOut: () -> Unit,
+    onOptions: () -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
     var signingOut by rememberSaveable { mutableStateOf(false) }
@@ -211,6 +213,14 @@ private fun AccountMenu(
                     onSignOut()
                 },
                 modifier = Modifier.testTag("home.sign-out"),
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.options)) },
+                onClick = {
+                    open = false
+                    onOptions()
+                },
+                modifier = Modifier.testTag("home.options"),
             )
         }
     }

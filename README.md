@@ -14,6 +14,8 @@ this app follows screen for screen.
 So far players can sign in and out (the session is kept between launches),
 and see their quests, kept up to date live as they start, pause and change.
 Staff and administrators are pointed to the website, where their tools are.
+Options, from the sign-in screen or the account menu, chooses which
+PuzzleQuest server the app uses (below).
 
 ## Requirements
 
@@ -48,33 +50,59 @@ emulator or a phone, or from the command line:
 ./gradlew :app:installDebug
 ```
 
-A debug build uses the server at <http://localhost:3000>; a release build uses
-<https://thepuzzlequest.com>. To run a server locally, follow the server
-repository's README ("Local setup"): `npm run dev`, then `npm run seed` for
-sample users (such as `alex`, password `puzzlequest sample`) and quests. The
-phone's localhost is not the computer's: forward the port to it each time
-the emulator starts or the phone is plugged in:
+Every build starts out using <https://thepuzzlequest.com>. To use a server on
+your computer, tap **Options** (the gear) on the sign-in screen and choose
+**This computer** (<http://localhost:3000>; debug builds only). To run a
+server locally, follow the server repository's README ("Local setup"):
+`npm run dev`, then `npm run seed` for sample users (such as `alex`, password
+`puzzlequest sample`) and quests. **Custom** takes any other address; a debug
+build allows any http or https address, a release build only
+thepuzzlequest.com and its subdomains, over HTTPS. The phone's localhost is
+not the computer's: forward the port to it each time the emulator starts or
+the phone is plugged in:
 
 ```sh
 adb reverse tcp:3000 tcp:3000
 ```
 
 Android 17 keeps apps that target it off the local network, so the
-emulator's usual address for the computer, 10.0.2.2, is refused; a forwarded
-port on the phone's own localhost isn't. To point a debug build at another
-server, start it with the intent extra `PQ_SERVER_URL`, as the UI tests do:
+emulator's usual address for the computer, 10.0.2.2, is refused, as are other
+addresses on the local network; a forwarded port on the phone's own localhost
+isn't. To point a debug build at a server for one run without changing
+Options, start it with the intent extra `PQ_SERVER_URL`, as the UI tests do:
 
 ```sh
 adb shell am start -n com.thepuzzlequest.puzzlequest/.MainActivity --es PQ_SERVER_URL http://localhost:3970
 ```
 
+## Choosing the server
+
+The server is a setting, kept in the app's preferences; a debug build's
+`PQ_SERVER_URL` overrides it for that run without changing it.
+`ServerAddressPolicy` decides which addresses a build may use: release builds
+an allowlist (https, thepuzzlequest.com or a subdomain, no other port; no user
+name, path, query or fragment), debug builds any http or https address (their
+network security configuration, in `src/debug/`, allows plain HTTP). A custom
+address is reduced to its origin, then checked to be a PuzzleQuest server
+(`ServerCheck` fetches `/api/v1/openapi.json` and reads its title and
+version) before the app switches to it. Each server's session token is kept
+apart (`KeystoreTokenVault`, one entry for each server's origin), so one
+server's token is never sent to another. Switching servers
+(`ServerConnection.switchTo`) asks first when someone is signed in, then
+forgets the old server's token, tells that server the session has ended, and
+makes a new session and API client for the new one; the app rebuilds its
+screens for it. If servers outside PuzzleQuest's domain are wanted later, a
+signed statement of the server's origin could be accepted alongside the
+allowlist (see `ServerAddressPolicy.admit`).
+
 ## Layout
 
-- `app/`: the app itself, kept thin: `MainActivity`, its screens (Compose, in
-  `ui/`), the token kept with the Android Keystore (`KeystoreTokenStore`), and
-  its words in `res/values/strings.xml` (English only for now).
+- `app/`: the app itself, kept thin: `MainActivity`, how it chooses its server
+  (`AppServer`), its screens (Compose, in `ui/`), each server's token kept
+  with the Android Keystore (`KeystoreTokenVault`), and its words in
+  `res/values/strings.xml` (English only for now).
   - `ui/theme/Theme.kt`: the brand's colors and display face (below).
-  - `src/debug/`: what only debug builds have: plain HTTP to localhost.
+  - `src/debug/`: what only debug builds have: plain HTTP, to any server.
   - `src/androidTest/`: UI tests (Compose) of whole journeys, and tests that
     need a phone, such as the Keystore's.
 - `core/`: a Kotlin library holding everything that can be tested without a
@@ -84,9 +112,10 @@ adb shell am start -n com.thepuzzlequest.puzzlequest/.MainActivity --es PQ_SERVE
     `core/build/generated/openapi`. Nothing in it is written by hand.
   - `src/main/kotlin`: what the screens use: `PuzzleQuestApi` (the calls,
     returning the app's own types and throwing `ApiError`), `SessionStore`
-    (who is signed in, and its token), `LiveUpdateFollower` (following the
+    (who is signed in, and its token), `ServerConnection` (the chosen server
+    and its session), `LiveUpdateFollower` (following the
     API's live updates over its websocket, reconnecting after a drop), and
-    models such as `SignInModel` and `HomeModel`, which publish their state
+    models such as `SignInModel`, `HomeModel` and `OptionsModel`, which publish their state
     as Kotlin flows.
   - `src/test`: unit tests. `src/contractTest`: tests against a real server.
 - `api/`: the pinned API release: its description (`openapi.json`), its
@@ -179,8 +208,10 @@ warning; `app/lint.xml` lists what's set aside, and why.
 ```
 
 These run on the computer: reading newer responses, explaining errors,
-restoring and ending sessions, the home screen's list and clocks, and
-following live updates, against a fake server
+restoring and ending sessions, the home screen's list and clocks,
+following live updates, which server addresses each build allows, checking
+a server is PuzzleQuest's, keeping each server's token apart, switching
+servers, and the Options screen's model, against a fake server
 ([MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver))
 and a fake websocket, on the coroutine test library's virtual clock.
 
@@ -215,7 +246,9 @@ They sign in, check the session, sign out, and check the problems the server
 sends for a wrong password, an invalid request, and too many attempts; make
 quests for new players as the administrator and check they're listed once
 started, and heard of through live updates over the real websocket; and send
-the verification email again, all through the generated client. Without
+the verification email again, all through the generated client; and check
+that the check before switching servers accepts a real server, and finds
+nothing where nothing listens. Without
 `PQ_TEST_SERVER_URL` they're skipped.
 
 ### UI tests, and everything on a phone
@@ -230,14 +263,21 @@ connected:
 The build passes the test server's variables on to the tests, and first
 forwards the server's port to the phone (`adb reverse`; with more than one
 phone or emulator connected, set `ANDROID_SERIAL` to choose). The UI tests
-launch the app pointed at the test server (with the intent extras
-`PQ_SERVER_URL`, `PQ_SIGNED_OUT` and `PQ_UI_TESTING`, which only debug builds
-read), and go through whole journeys: signing in and out, a session kept
+launch the app signed out of every server, pointed at the test server (with
+the intent extras `PQ_SIGNED_OUT`, `PQ_SERVER_URL` and `PQ_UI_TESTING`, which
+only debug builds read), and go through whole journeys: signing in and out, a session kept
 between launches, a wrong password, a quest appearing on the home screen as
 the administrator starts it, sending the verification email again, and
-staff being pointed to the website. They set up players and quests through
-the generated client. Without the variables, they're skipped. They find controls by their test tags (such
-as `sign-in.user-name`), so those stay put when wording changes.
+staff being pointed to the website. Without `PQ_SERVER_URL` (and with
+`PQ_RESET_SERVER`, so Options is as a new install has it), they check
+Options starts with Production, choose the test server as a custom one and
+sign in to it (the sign-in screen naming it), and switch back to Production
+from the account menu, which asks first and signs out; they never ask
+Production anything. The Keystore tests check each server's token is kept
+apart, and encrypted. The tests set up players and quests through the
+generated client. Without the variables, they're skipped. They find controls
+by their test tags (such as `sign-in.user-name`), so those stay put when
+wording changes.
 
 ## Continuous integration
 

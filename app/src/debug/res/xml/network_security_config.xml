@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Debug builds only: plain HTTP to a server on the computer, which the
-     phone reaches at its own localhost through `adb reverse`. Release builds
-     allow HTTPS only. -->
-<network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">localhost</domain>
-        <domain includeSubdomains="false">127.0.0.1</domain>
-    </domain-config>
+<!-- Debug builds only: plain HTTP to any server, such as one on the computer
+     (which the phone reaches at its own localhost through `adb reverse`), or
+     a test server chosen in Options. Release builds allow HTTPS only, and
+     their Options refuses any address that isn't. -->
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration" />
 </network-security-config>

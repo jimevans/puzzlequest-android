@@ -29,10 +29,6 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // The site a release build uses; debug builds use a server on the
-        // Mac (below).
-        buildConfigField("String", "SERVER_URL", "\"https://thepuzzlequest.com\"")
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // The UI tests use the test server (scripts/start-test-server.sh),
         // named by the variables in .test-server/env when they're in the
@@ -43,15 +39,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            // A server run on this Mac (npm run dev in the server repository),
-            // reached through `adb reverse tcp:3000 tcp:3000`, which forwards
-            // the phone's port 3000 to the Mac's. (Android 17 keeps apps
-            // that target it off the local network, which the emulator's
-            // 10.0.2.2 alias for the Mac is on; the phone's own localhost is
-            // allowed.)
-            buildConfigField("String", "SERVER_URL", "\"http://localhost:3000\"")
-        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
