@@ -82,6 +82,16 @@ jobs:
           disable-animations: true
           script: ./gradlew :app:connectedDebugAndroidTest
 
+      # A skipped test passes; say how many ran, so a run that skipped the UI
+      # tests (without the test server's variables, say) shows it.
+      - name: Count the tests
+        if: always()
+        run: |
+          for f in core/build/test-results/*/*.xml app/build/outputs/androidTest-results/connected/debug/*.xml; do
+            [ -f "$f" ] || continue
+            grep -o '<testsuite name="[^"]*" tests="[0-9]*"[^>]*' "$f" | sed 's/<testsuite //'
+          done | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Stop the test server
         if: always()
         run: scripts/stop-test-server.sh
