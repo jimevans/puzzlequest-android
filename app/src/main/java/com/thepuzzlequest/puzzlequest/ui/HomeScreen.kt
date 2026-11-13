@@ -54,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.HomeViewModel
+import com.thepuzzlequest.puzzlequest.PuzzleViewModel
 import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
 import com.thepuzzlequest.puzzlequest.core.SignedInUser
@@ -68,6 +69,14 @@ object QuestsRoute
 @Serializable
 data class QuestRoute(
     val questName: String,
+    val displayName: String,
+)
+
+/** The puzzle of the stop being played, opened from its quest. */
+@Serializable
+data class PuzzleRoute(
+    val questName: String,
+    val puzzleName: String,
     val displayName: String,
 )
 
@@ -108,7 +117,13 @@ fun HomeScreen(
                 uiTesting,
                 onBack = { navigation.popBackStack() },
                 onOpenStop = { navigation.navigate(it) },
+                onOpenPuzzle = { navigation.navigate(it) },
             )
+        }
+        composable<PuzzleRoute> { entry ->
+            val route = entry.toRoute<PuzzleRoute>()
+            val puzzle = viewModel { PuzzleViewModel(route.questName, route.puzzleName, server.session.api) }
+            PuzzleScreen(route, puzzle, server.origin.url, uiTesting, onBack = { navigation.popBackStack() })
         }
         composable<StopRoute> { entry ->
             // The quest's own ViewModel, from the quest's place in the back

@@ -8,6 +8,7 @@ import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
 import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreatePuzzleRequest
+import com.thepuzzlequest.puzzlequest.api.models.CreatePuzzleRequestHintsInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestEntrantsInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestPuzzlesInner
@@ -84,36 +85,75 @@ object TestSite {
     fun makeQuest(
         player: String,
         adminToken: String,
-    ): String = makeQuest(listOf(player), adminToken)
+        stops: Int = 1,
+    ): String = makeQuest(listOf(player), adminToken, stops)
 
     /**
-     * Makes a quest of one stop, each player playing it on their own (a race,
-     * for more than one), without starting it.
+     * Makes a quest, each player playing it on their own (a race, for more
+     * than one), without starting it. Its first stop is "A puzzle", the others
+     * "Another puzzle"; each is solved by "piano", and has two hints, the
+     * second giving the solution away.
      */
     fun makeQuest(
         players: List<String>,
         adminToken: String,
+        stops: Int = 1,
     ): String {
-        val puzzleName = unique("puzzle")
-        PuzzlesApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }.createPuzzle(
-            CreatePuzzleRequest(
-                puzzleName = puzzleName,
-                solutionKeyword = "piano",
-                solutionText = "A piano",
-                displayName = "A puzzle",
-                text = "What has keys?",
-            ),
-        )
+        val puzzles = PuzzlesApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }
+        val puzzleNames =
+            (1..stops).map { stop ->
+                unique("puzzle").also { puzzleName ->
+                    puzzles.createPuzzle(
+                        CreatePuzzleRequest(
+                            puzzleName = puzzleName,
+                            solutionKeyword = "piano",
+                            solutionText = "A piano",
+                            displayName = if (stop == 1) "A puzzle" else "Another puzzle",
+                            text = "What has *keys*?",
+                            hints =
+                                listOf(
+                                    CreatePuzzleRequestHintsInner("It makes music", timePenaltySeconds = 60),
+                                    CreatePuzzleRequestHintsInner(
+                                        "A piano",
+                                        solutionWarning = true,
+                                        timePenaltySeconds = 300,
+                                    ),
+                                ),
+                        ),
+                    )
+                }
+            }
         val questName = unique("quest")
         QuestsApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }.createQuest(
             CreateQuestRequest(
                 questName = questName,
                 displayName = "Quest $questName",
                 entrants = players.map { CreateQuestRequestEntrantsInner(EntrantKind.player, it) },
-                puzzles = listOf(CreateQuestRequestPuzzlesInner(puzzleName)),
+                puzzles = puzzleNames.map { CreateQuestRequestPuzzlesInner(it) },
             ),
         )
         return questName
+    }
+
+    /** A stop's activation code, as the administrator sees it. */
+    fun activationCode(
+        questName: String,
+        puzzleName: String,
+        adminToken: String,
+    ): String =
+        QuestsApi(baseUrl, http)
+            .apply { accessTokenProvider = { adminToken } }
+            .getQuest(questName)
+            .propertyEntries
+            .flatMap { it.puzzles }
+            .first { it.puzzleName == puzzleName }
+            .activationCode!!
+
+    fun pause(
+        questName: String,
+        adminToken: String,
+    ) {
+        RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }.pauseQuest(questName)
     }
 
     fun start(
@@ -146,14 +186,7 @@ object TestSite {
                     ?.entry
                     ?.currentStop,
             ) { "no current stop" }
-        val code =
-            QuestsApi(baseUrl, http)
-                .apply { accessTokenProvider = { adminToken } }
-                .getQuest(questName)
-                .propertyEntries
-                .flatMap { it.puzzles }
-                .first { it.puzzleName == stop.puzzleName }
-                .activationCode
+        val code = activationCode(questName, stop.puzzleName, adminToken)
         val playing = PlayingApi(baseUrl, http).apply { accessTokenProvider = { player.token } }
         playing.activatePuzzle(questName, stop.puzzleName, ActivatePuzzleRequest(activationCode = code))
         playing.attemptSolution(questName, stop.puzzleName, AttemptSolutionRequest("piano"))

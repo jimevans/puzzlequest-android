@@ -15,7 +15,10 @@ So far players can sign in and out (the session is kept between launches),
 see their quests, kept up to date live as they start, pause and change, and
 open one: the stop they're on first, then the stops they've solved, each with
 its times and solution, and once they finish, the end of the line and, in a
-race, the standings. It never says how many stops a quest has.
+race, the standings. The stop they're on opens to its puzzle: they activate
+it by scanning its QR code or typing its code, read it (text, a picture, a
+recording or a film), reveal hints, answer, and go on to the next stop. It
+never says how many stops a quest has.
 Staff and administrators are pointed to the website, where their tools are.
 Options, from the sign-in screen or the account menu, chooses which
 PuzzleQuest server the app uses (below).
@@ -41,8 +44,25 @@ PuzzleQuest server the app uses (below).
 Every library and build plugin is pinned to an exact version in
 `gradle/libs.versions.toml`, each out at least two weeks when chosen. The
 app's own libraries are Jetpack Compose with Material 3 and Navigation
-Compose, kotlinx.coroutines and kotlinx.serialization, and OkHttp (for the API
-client and the live-update websocket).
+Compose, kotlinx.coroutines and kotlinx.serialization, OkHttp (for the API
+client, the live-update websocket and puzzles' pictures),
+[commonmark-java](https://github.com/commonmark/commonmark-java) (reading text
+puzzles' Markdown, with GitHub's tables, strikethrough and task lists), and
+Google Play services' [code scanner](https://developers.google.com/ml-kit/vision/barcode-scanning/code-scanner)
+(reading a puzzle's QR code). Recordings and films play with Android's own
+`VideoView`.
+
+## Scanning a puzzle's QR code
+
+The code scanner is Google Play services' own screen: it opens over the app,
+and hands the app only the code it read, so the app asks for no camera
+permission and no picture leaves the phone. The code on a puzzle's card is
+just its activation code, which is sent as if typed. Google Play installs the
+scanner with the app (the `com.google.mlkit.vision.DEPENDENCIES` entry in the
+manifest). A phone without a camera or Google Play services isn't offered
+scanning, and if the scanner fails the player is asked to type the code;
+typing always works. The UI tests type codes, since they can't drive Google's
+screen.
 
 ## Running the app
 
@@ -118,9 +138,10 @@ allowlist (see `ServerAddressPolicy.admit`).
     (who is signed in, and its token), `ServerConnection` (the chosen server
     and its session), `LiveUpdateFollower` (following the
     API's live updates over its websocket, reconnecting after a drop), and
-    models such as `SignInModel`, `HomeModel`, `QuestModel` and
-    `OptionsModel`, which publish their state
-    as Kotlin flows.
+    models such as `SignInModel`, `HomeModel`, `QuestModel`, `PuzzleModel`
+    and `OptionsModel`, which publish their state as Kotlin flows; and
+    `MarkdownBlock`, which reads a text puzzle's Markdown into blocks the
+    app draws itself (HTML in it shows as plain text, as on the web).
   - `src/test`: unit tests. `src/contractTest`: tests against a real server.
 - `api/`: the pinned API release: its description (`openapi.json`), its
   live-update messages (`live-updates.json`), what push notifications carry
@@ -214,7 +235,9 @@ warning; `app/lint.xml` lists what's set aside, and why.
 These run on the computer: reading newer responses, explaining errors,
 restoring and ending sessions, the home screen's list and clocks,
 following live updates, reading a player's quest and its standings, what's
-announced to TalkBack as a quest changes, the quest screen's model, which
+announced to TalkBack as a quest changes, the quest screen's model, reading
+a puzzle, the puzzle screen's model (activating, scanning, guessing, hints,
+going on to the next stop), reading Markdown, which
 server addresses each build allows, checking
 a server is PuzzleQuest's, keeping each server's token apart, switching
 servers, and the Options screen's model, against a fake server
@@ -254,7 +277,10 @@ quests for new players as the administrator and check they're listed once
 started, and heard of through live updates over the real websocket; and send
 the verification email again, all through the generated client; and check
 fetch a quest before and after it starts, solve its stop, race two players to
-the standings, reset a quest, and follow a quest's live updates; check
+the standings, reset a quest, and follow a quest's live updates; activate a
+puzzle (refusing a wrong code), reveal its hints, answer it wrongly and then
+rightly, act while the quest is paused, and look for a puzzle after a reset;
+check
 that the check before switching servers accepts a real server, and finds
 nothing where nothing listens. Without
 `PQ_TEST_SERVER_URL` they're skipped.
@@ -280,7 +306,11 @@ staff being pointed to the website. On a quest's screen, they see the current
 stop, a pause and a resume, finishing a race (the finish, the standings with
 the player's own entry marked, and a solved stop's solution), and a reset,
 each happening through the API while the screen is open, so it can only show
-through live updates. Without `PQ_SERVER_URL` (and with
+through live updates. On a puzzle's screen, they activate it (a wrong code,
+then the right one), reveal a hint and decline the one that gives the solution
+away, answer wrongly and then rightly, and go on to the next stop; see a pause
+and a resume, and a solve by a teammate, through to the finish; and see a
+reset, which the quest screen beneath hears of too. Without `PQ_SERVER_URL` (and with
 `PQ_RESET_SERVER`, so Options is as a new install has it), they check
 Options starts with Production, choose the test server as a custom one and
 sign in to it (the sign-in screen naming it), and switch back to Production

@@ -44,5 +44,11 @@ data class Problem(
         const val SIGN_IN_FAILED = "/problems/sign-in-failed"
         const val TOO_MANY_REQUESTS = "/problems/too-many-requests"
         const val UNEXPECTED = "/problems/unexpected"
+        const val WRONG_STATE = "/problems/wrong-state"
+        const val QUEST_PAUSED = "/problems/quest-paused"
+        const val TRY_AGAIN = "/problems/try-again"
+        const val WRONG_ACTIVATION_CODE = "/problems/wrong-activation-code"
+        const val WRONG_ANSWER = "/problems/wrong-answer"
+        const val NO_MORE_HINTS = "/problems/no-more-hints"
     }
 }

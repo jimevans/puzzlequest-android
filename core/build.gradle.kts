@@ -52,6 +52,11 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     // Part of its API: PuzzleQuestApi takes and shares an OkHttpClient.
     api(libs.okhttp)
+    // Text puzzles' Markdown, read into blocks the app draws itself.
+    implementation(libs.commonmark)
+    implementation(libs.commonmark.gfm.tables)
+    implementation(libs.commonmark.gfm.strikethrough)
+    implementation(libs.commonmark.task.list.items)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -40,7 +40,9 @@ class FakeServer : ExternalResource() {
         server.dispatcher =
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-                    val (status, json) = answer("${request.method} ${request.url.encodedPath}")
+                    val name = "${request.method} ${request.url.encodedPath}"
+                    request.body?.let { bodies += name to it.utf8() }
+                    val (status, json) = answer(name)
                     return MockResponse
                         .Builder()
                         .code(status)
@@ -50,6 +52,12 @@ class FakeServer : ExternalResource() {
                 }
             }
     }
+
+    /**
+     * The bodies of the requests [answer] has answered, with their method and
+     * path, in the order they came.
+     */
+    val bodies: MutableList<Pair<String, String>> = java.util.Collections.synchronizedList(mutableListOf())
 
     /** What was sent next, waiting briefly for it. */
     fun sent(): RecordedRequest =
