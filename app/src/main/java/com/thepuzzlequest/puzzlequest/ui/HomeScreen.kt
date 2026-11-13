@@ -56,6 +56,7 @@ import androidx.navigation.toRoute
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.HomeViewModel
 import com.thepuzzlequest.puzzlequest.PreferencesMessagesSeen
+import com.thepuzzlequest.puzzlequest.Push
 import com.thepuzzlequest.puzzlequest.PuzzleViewModel
 import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
@@ -118,6 +119,27 @@ fun HomeScreen(
     // a new player's, or a new server's, from reusing the last one's.
     val home = viewModel(key = "home-${server.switches}-${user.userName}") { HomeViewModel(user, server.session) }
     val navigation = rememberNavController()
+
+    // Notifications: once allowed and Firebase has given the phone's token,
+    // it's registered with this player's session.
+    val token by Push.registrar.token.collectAsStateWithLifecycle()
+    val permission by Push.registrar.permission.collectAsStateWithLifecycle()
+    LaunchedEffect(token, permission, server) { Push.registrar.register(server.session.api) }
+
+    // A tapped notification opens its quest, over whatever was open, named as
+    // in the list if it's there.
+    val questToOpen by Push.registrar.questToOpen.collectAsStateWithLifecycle()
+    LaunchedEffect(questToOpen) {
+        val questName = questToOpen ?: return@LaunchedEffect
+        val listed =
+            home.model.state.value.quests
+                ?.firstOrNull { it.questName == questName }
+        navigation.navigate(QuestRoute(questName, listed?.displayName ?: questName)) {
+            popUpTo<QuestsRoute>()
+        }
+        Push.registrar.questOpened()
+    }
+
     NavHost(navigation, startDestination = QuestsRoute) {
         composable<QuestsRoute> {
             QuestList(app, home, user, uiTesting, onOpen = { navigation.navigate(it) })

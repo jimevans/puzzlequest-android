@@ -1,4 +1,4 @@
-// Writes the app's logo and launcher icon layers as Android vector drawables
+// Writes the app's logo, launcher icon layers and notification icon as Android vector drawables
 // from the brand's logo, brand/logo.svg in the server repository, whose
 // README describes the brand. Its three paths are the piece's outline
 // (aubergine, the whole silhouette), its fill (pale gold), and the Q
@@ -83,4 +83,27 @@ layer("ic_launcher_monochrome", [
   pathElement({ fill: "#ffffff", evenOdd: true, data: `${outline.data} ${q.data}` }),
 ]);
 
-console.log(`Wrote logo.xml, ic_launcher_foreground.xml and ic_launcher_monochrome.xml to ${path.relative(root, out)}`);
+// The notification icon: Android draws it in one colour, small, in the
+// status bar, so it's the same silhouette, filling a 24 dp square but for
+// a dp of margin all round.
+const small = 22 / Math.max(width, height);
+writeFileSync(
+  path.join(out, "ic_notification.xml"),
+  `${header}
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+${group([pathElement({ fill: "#ffffff", evenOdd: true, data: `${outline.data} ${q.data}` })], {
+    scale: small,
+    x: (24 - width * small) / 2,
+    y: (24 - height * small) / 2,
+  })}
+</vector>
+`
+);
+
+console.log(
+  `Wrote logo.xml, ic_launcher_foreground.xml, ic_launcher_monochrome.xml and ic_notification.xml to ${path.relative(root, out)}`
+);

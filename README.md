@@ -22,8 +22,10 @@ puzzle master's messages pop up over the quest as they arrive, each once on
 this phone; a challenge is answered there, and a right answer shows the
 confirmation to show the venue's staff, kept at the top of the quest until
 the player hides it. Everything the puzzle master has sent is in the quest's
-history. It never says how many stops a quest has. (Push notifications come
-later.)
+history. Push notifications tell them when a quest starts, is paused or
+resumed, when a teammate solves a stop, of the puzzle master's messages, and
+how a race ends, even with the app closed. It never says how many stops a
+quest has.
 Staff and administrators are pointed to the website, where their tools are.
 Options, from the sign-in screen or the account menu, chooses which
 PuzzleQuest server the app uses (below).
@@ -56,6 +58,35 @@ puzzles' Markdown, with GitHub's tables, strikethrough and task lists), and
 Google Play services' [code scanner](https://developers.google.com/ml-kit/vision/barcode-scanning/code-scanner)
 (reading a puzzle's QR code). Recordings and films play with Android's own
 `VideoView`.
+
+## Push notifications
+
+Notifications come through [Firebase Cloud
+Messaging](https://firebase.google.com/docs/cloud-messaging): the server sends
+them (with the Firebase project's service account; see its README), and the
+app registers the phone's token with the player's session (`PUT
+/sessions/current/push-target`), so signing out ends them.
+`app/google-services.json` is the Firebase project's settings for this app
+(Firebase console > Project settings > Your apps); its values identify the
+project rather than grant access, so it's in the repository, and its API key
+is restricted in Google Cloud to the Android app and Firebase's APIs.
+
+- Android 13 and later ask the player before an app may notify. The app asks
+  only when the player chooses **Turn on** on a quest's screen (never right
+  after signing in), and offers it there until they answer, or say **Not
+  now** on that quest. Earlier versions allow notifications unless they're
+  turned off in the phone's settings.
+- The phone is registered only once notifications are allowed: until then,
+  the puzzle master's messages are texted, as to a player without the app.
+- Firebase shows a notification that arrives while the app is closed, in the
+  app's "Quests" channel. While it's open, the app shows it, unless it's about
+  the quest on screen, whose live updates have already shown what changed.
+  Tapping one opens its quest.
+- The UI tests give the app a token of their own (`PQ_FAKE_PUSH_TOKEN`, which
+  only debug builds read), since an emulator on CI can't get one from
+  Firebase, and grant the permission rather than tap Android's question. That
+  Firebase gives a phone a token, and delivers, is checked on a phone against
+  a server with the service account.
 
 ## Scanning a puzzle's QR code
 
@@ -245,7 +276,8 @@ announced to TalkBack as a quest changes, the quest screen's model, reading
 a puzzle, the puzzle screen's model (activating, scanning, guessing, hints,
 going on to the next stop), reading Markdown, the puzzle master's messages
 (each shown once on this phone) and challenges (answering, reopening,
-hiding), which
+hiding), push notifications (reading one, offering them, registering the
+phone, which are shown), which
 server addresses each build allows, checking
 a server is PuzzleQuest's, keeping each server's token apart, switching
 servers, and the Options screen's model, against a fake server
@@ -319,7 +351,10 @@ through live updates. On a puzzle's screen, they activate it (a wrong code,
 then the right one), reveal a hint and decline the one that gives the solution
 away, answer wrongly and then rightly, and go on to the next stop; see a pause
 and a resume, and a solve by a teammate, through to the finish; and see a
-reset, which the quest screen beneath hears of too. A challenge from the
+reset, which the quest screen beneath hears of too. Notifications are
+offered on a quest until the player says not now (while the emulator hasn't
+yet allowed them), and once allowed, the phone is registered, so the puzzle
+master can reach a player who can't be texted. A challenge from the
 puzzle master pops up as it's sent; they answer it wrongly and then rightly,
 see the confirmation, put it away and reopen it, hide it, and find it in the
 history. Only a player with the app or a phone number can be sent a message,

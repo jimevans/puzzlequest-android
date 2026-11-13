@@ -80,7 +80,10 @@ class AppViewModel(
         password: String,
     ) {
         val signIn = signIn
-        viewModelScope.launch { signIn.signIn(userName, password) }
+        viewModelScope.launch {
+            // A new session needs the phone registered for its notifications.
+            if (signIn.signIn(userName, password)) Push.registrar.forgetRegistration()
+        }
     }
 
     fun refreshUser() {
@@ -90,7 +93,11 @@ class AppViewModel(
 
     fun signOut() {
         val session = session
-        viewModelScope.launch { session.signOut() }
+        viewModelScope.launch {
+            session.signOut()
+            // Signing out ended the session's notifications.
+            Push.registrar.forgetRegistration()
+        }
     }
 
     fun openOptions() {

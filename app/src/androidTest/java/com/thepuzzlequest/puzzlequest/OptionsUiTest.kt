@@ -100,9 +100,7 @@ class OptionsUiTest {
         compose.waitFor("options.server.custom", 10_000)
         compose.onNodeWithTag("options.server.custom").performClick()
         compose.waitFor("options.custom-address", 10_000)
-        compose.onNodeWithTag("options.custom-address").performTextInput(TestServer.url)
-        // Scrolled into view above the keyboard, which covers it on a small screen.
-        compose.onNodeWithTag("options.use-custom").performScrollTo().performClick()
+        compose.typeThenTap("options.custom-address", TestServer.url, "options.use-custom")
         // Switching rebuilds the screens for the new server, closing Options.
         compose.waitUntilDoesNotExist(hasTestTag("options.server.custom"), 30_000)
         // Options can close a frame before the old server's screens are

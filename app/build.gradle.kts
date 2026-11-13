@@ -16,6 +16,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     // Screens' routes are serializable classes (Navigation Compose's type-safe routes).
     alias(libs.plugins.kotlin.serialization)
+    // Firebase's settings for the app, from app/google-services.json.
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -72,6 +74,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.play.services.code.scanner)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

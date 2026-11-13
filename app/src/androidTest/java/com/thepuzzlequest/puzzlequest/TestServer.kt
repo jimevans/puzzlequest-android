@@ -11,7 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.PuzzlesApi
@@ -188,6 +190,18 @@ object TestServer {
             .signIn(SignInRequest(player, password, SignInRequest.Client.native))
             .token!!
 
+    /** As the puzzle master, sends the player a message; refused unless they can be reached. */
+    fun sendMessage(
+        questName: String,
+        player: String,
+        message: String,
+        admin: String,
+    ) {
+        RunningQuestsApi(baseUrl, http)
+            .apply { accessTokenProvider = { admin } }
+            .sendPlayerTextMessage(questName, player, SendQuestTextMessageRequest(message))
+    }
+
     /**
      * As the puzzle master, sends the player a challenge whose answer is
      * "lighthouse", and whose confirmation is "Show this to the bartender".
@@ -277,6 +291,10 @@ fun launchApp(
             .putExtra(AppServer.EXTRA_SIGNED_OUT, signedOut)
             // Shows the home screen's live-update state to the tests.
             .putExtra(MainActivity.EXTRA_UI_TESTING, true)
+            // A phone's token for push notifications, in place of
+            // Firebase's, which an emulator on CI can't get; one for each
+            // launch. The test server sends nothing to it.
+            .putExtra(Push.EXTRA_FAKE_TOKEN, TestServer.unique("token"))
     if (fixedServer) {
         intent.putExtra(AppServer.EXTRA_SERVER_URL, TestServer.url)
     } else {
@@ -312,6 +330,24 @@ fun ComposeTestRule.waitForLiveUpdates(tag: String) =
             ?.getOrNull(SemanticsProperties.StateDescription) == "connected"
     }
 
+/**
+ * Types into a field (replacing what's there), then taps a button. The
+ * keyboard is closed between, and the button scrolled into view: while the
+ * keyboard slides up, the screen moves, and a tap can land where the button
+ * no longer is (as on CI's slow emulator), or on the keyboard itself.
+ */
+fun ComposeTestRule.typeThenTap(
+    field: String,
+    text: String,
+    button: String,
+) {
+    onNodeWithTag(field).performScrollTo().performTextReplacement(text)
+    waitForIdle()
+    Espresso.closeSoftKeyboard()
+    waitForIdle()
+    onNodeWithTag(button).performScrollTo().performClick()
+}
+
 fun ComposeTestRule.signIn(
     userName: String,
     password: String,
@@ -319,6 +355,9 @@ fun ComposeTestRule.signIn(
     waitFor("sign-in.user-name")
     onNodeWithTag("sign-in.user-name").performTextInput(userName)
     onNodeWithTag("sign-in.password").performTextInput(password)
+    waitForIdle()
+    Espresso.closeSoftKeyboard()
+    waitForIdle()
     // On a small screen, the keyboard covers the button: scroll it into view
     // above the keyboard first, as a person would, or the tap lands on the
     // keyboard.

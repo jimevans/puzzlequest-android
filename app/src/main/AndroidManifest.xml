@@ -2,10 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Push notifications; Android 13 and later ask the player, when they
+         choose to turn them on from a quest. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- The session's token belongs to this phone: it's never backed up or
          moved to another (and its key, in the Android Keystore, couldn't be). -->
     <application
+        android:name=".PuzzleQuestApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
@@ -19,9 +23,30 @@
         <meta-data
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="barcode_ui" />
+        <!-- How Firebase shows a notification that arrives while the app is
+             closed: in PuzzleQuest's channel, with its icon and colour. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="quests" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/brand_purple" />
+        <service
+            android:name=".PuzzleQuestMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- singleTop: a tapped notification goes to the screen already
+             open (onNewIntent) rather than opening a second one over it. -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

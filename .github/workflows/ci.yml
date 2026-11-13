@@ -105,4 +105,6 @@ jobs:
             */build/reports/
             app/build/outputs/androidTest-results/
             .test-server/*.log
+          # .test-server is a hidden folder, which is left out otherwise.
+          include-hidden-files: true
           if-no-files-found: ignore
