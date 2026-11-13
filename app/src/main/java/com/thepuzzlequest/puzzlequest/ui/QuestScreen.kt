@@ -2,6 +2,7 @@ package com.thepuzzlequest.puzzlequest.ui
 
 import android.icu.text.ListFormatter
 import android.icu.text.MessageFormat
+import android.icu.text.NumberFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
+import com.thepuzzlequest.puzzlequest.core.Challenge
 import com.thepuzzlequest.puzzlequest.core.PlayerQuest
 import com.thepuzzlequest.puzzlequest.core.QuestChange
 import com.thepuzzlequest.puzzlequest.core.QuestClock
@@ -90,6 +92,7 @@ fun QuestScreen(
     onBack: () -> Unit,
     onOpenStop: (StopRoute) -> Unit,
     onOpenPuzzle: (PuzzleRoute) -> Unit,
+    onOpenMessages: (MessagesRoute) -> Unit,
 ) {
     val state by quest.model.state.collectAsStateWithLifecycle()
     val refreshing by quest.refreshing.collectAsStateWithLifecycle()
@@ -117,7 +120,19 @@ fun QuestScreen(
             when {
                 shown != null -> {
                     PullToRefreshBox(isRefreshing = refreshing, onRefresh = quest::refresh) {
-                        QuestProgressList(shown, state.standings, onOpenStop, onOpenPuzzle)
+                        QuestProgressList(
+                            shown,
+                            state.standings,
+                            state.challengeAtTop,
+                            onOpenStop,
+                            onOpenPuzzle,
+                            onOpenMessages,
+                            onShowChallenge = quest.model::showChallenge,
+                            onHideChallenge = quest.model::hideAnsweredChallenge,
+                        )
+                    }
+                    state.messageSheet?.let { sheet ->
+                        MessageSheetView(sheet, shown.entry, quest)
                     }
                 }
 
@@ -148,6 +163,7 @@ fun QuestScreen(
             }
             Announcement(announcement(state.changes), state.changeCount)
             Announcement(stringResource(R.string.quest_no_longer_available), if (state.notAvailable) 1 else 0)
+            Announcement(state.challengeError?.let { stringResource(it.message) }.orEmpty(), state.challengeErrorCount)
             if (uiTesting) LiveUpdatesMarker("quest.live-updates", state.isLive)
         }
     }
@@ -158,8 +174,12 @@ fun QuestScreen(
 private fun QuestProgressList(
     quest: PlayerQuest,
     standings: Standings?,
+    challengeAtTop: Challenge?,
     onOpenStop: (StopRoute) -> Unit,
     onOpenPuzzle: (PuzzleRoute) -> Unit,
+    onOpenMessages: (MessagesRoute) -> Unit,
+    onShowChallenge: () -> Unit,
+    onHideChallenge: () -> Unit,
 ) {
     val entry = quest.entry
     LazyColumn(
@@ -167,6 +187,16 @@ private fun QuestProgressList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // The puzzle master's challenge comes first: the players may be at a
+        // venue, with its staff, waiting on it.
+        challengeAtTop?.let { challenge ->
+            item(key = "challenge") { ChallengeRow(challenge, onOpen = onShowChallenge, onHide = onHideChallenge) }
+        }
+        if (entry.messages.isNotEmpty()) {
+            item(
+                key = "messages",
+            ) { MessagesRow(entry.messages.size) { onOpenMessages(MessagesRoute(quest.questName)) } }
+        }
         if (entry.paused) {
             item {
                 StatusMessage(
@@ -323,6 +353,46 @@ fun EndOfTheLine(
             stringResource(R.string.quest_finished, questDisplayName, QuestClock.format(totalMs)),
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White,
+        )
+    }
+}
+
+/** The row that opens everything the puzzle master has sent, with how many. */
+@Composable
+private fun MessagesRow(
+    count: Int,
+    onOpen: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpen)
+                .semantics(mergeDescendants = true) {}
+                .testTag("quest.messages-row")
+                .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_chat),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.from_the_puzzle_master),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            NumberFormat.getInstance(currentLocale()).format(count),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -705,6 +775,17 @@ private fun announcement(changes: List<QuestChange>): String {
 
                 is QuestChange.RivalFinished -> {
                     stringResource(R.string.announce_rival_finished, name(change.entry), ordinal(change.rank, locale))
+                }
+
+                is QuestChange.MessageReceived -> {
+                    stringResource(
+                        if (change.isChallenge) R.string.announce_challenge else R.string.announce_message,
+                        change.text,
+                    )
+                }
+
+                QuestChange.ChallengeAnswered -> {
+                    stringResource(R.string.announce_challenge_answered)
                 }
 
                 is QuestChange.StandingsFinal -> {

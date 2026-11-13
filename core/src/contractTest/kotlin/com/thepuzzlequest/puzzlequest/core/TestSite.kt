@@ -4,6 +4,7 @@ import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.PuzzlesApi
 import com.thepuzzlequest.puzzlequest.api.apis.QuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.RunningQuestsApi
+import com.thepuzzlequest.puzzlequest.api.apis.SessionsApi
 import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
 import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
@@ -14,6 +15,8 @@ import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestEntrantsInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestPuzzlesInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateUserRequest
 import com.thepuzzlequest.puzzlequest.api.models.EntrantKind
+import com.thepuzzlequest.puzzlequest.api.models.PushTarget
+import com.thepuzzlequest.puzzlequest.api.models.SendQuestTextMessageRequest
 import java.util.UUID
 
 /**
@@ -148,6 +151,53 @@ object TestSite {
             .flatMap { it.puzzles }
             .first { it.puzzleName == puzzleName }
             .activationCode!!
+
+    /**
+     * Registers a phone for the player's push notifications, as the app will,
+     * so the puzzle master can reach them: only players with the app or a
+     * phone number to text can be sent a message. The test server sends
+     * nothing to it.
+     */
+    fun registerPhone(player: Player) {
+        SessionsApi(baseUrl, http).apply { accessTokenProvider = { player.token } }.setPushTarget(
+            PushTarget(PushTarget.Platform.android, unique("phone"), PushTarget.Environment.development),
+        )
+    }
+
+    /** As the puzzle master, sends the player a message. */
+    fun sendMessage(
+        questName: String,
+        player: String,
+        message: String,
+        adminToken: String,
+    ) {
+        RunningQuestsApi(baseUrl, http)
+            .apply { accessTokenProvider = { adminToken } }
+            .sendPlayerTextMessage(questName, player, SendQuestTextMessageRequest(message = message))
+    }
+
+    /**
+     * As the puzzle master, sends the player the challenge "What lights the
+     * harbour?", whose answer is "lighthouse" and whose confirmation is "Show
+     * this to the bartender".
+     */
+    fun sendChallenge(
+        questName: String,
+        player: String,
+        adminToken: String,
+    ) {
+        RunningQuestsApi(baseUrl, http)
+            .apply { accessTokenProvider = { adminToken } }
+            .sendPlayerTextMessage(
+                questName,
+                player,
+                SendQuestTextMessageRequest(
+                    message = "What lights the harbour?",
+                    expectedResponse = "lighthouse",
+                    responseConfirmation = "Show this to the bartender",
+                ),
+            )
+    }
 
     fun pause(
         questName: String,

@@ -131,6 +131,30 @@
     <string name="puzzle_unreachable">Couldn\'t reach the server. Check your connection and try again.</string>
     <string name="puzzle_unexpected">Something went wrong. Try again.</string>
 
+    <!-- The puzzle master's messages and challenges -->
+    <string name="from_the_puzzle_master">From the puzzle master</string>
+    <string name="done">Done</string>
+    <string name="challenge">Challenge</string>
+    <string name="challenge_from_puzzle_master">A challenge from the puzzle master</string>
+    <string name="send_the_answer">Send the answer</string>
+    <string name="type_your_answer_first">Type your answer first.</string>
+    <string name="challenge_changed">This challenge has already been answered, perhaps by a teammate, or the puzzle master sent another.</string>
+    <!-- Above the confirmation of a challenge answered rightly, which the players show the venue's staff -->
+    <string name="show_this_to_the_staff">Show this to the staff</string>
+    <!-- Such as "Answered at 4:20 PM" -->
+    <string name="answered_at">Answered at %1$s</string>
+    <!-- Such as "Answered by text at 4:20 PM": a player answered by text message, not in the app -->
+    <string name="answered_by_text_at">Answered by text at %1$s</string>
+    <string name="challenge_waiting">Challenge waiting</string>
+    <string name="challenge_answered">Challenge answered</string>
+    <!-- What tapping the row does while the challenge waits -->
+    <string name="answer">Answer</string>
+    <string name="show_confirmation">Show confirmation</string>
+    <string name="hide_answered_challenge">Hide the answered challenge</string>
+    <string name="open_the_challenge">open the challenge</string>
+    <string name="the_challenge">The challenge</string>
+    <string name="another_challenge_since">The puzzle master has sent another challenge since this one.</string>
+
     <!-- What TalkBack says as the quest changes on screen -->
     <string name="announce_paused">Paused by the puzzle master. The clock is stopped.</string>
     <string name="announce_resumed">The quest has resumed.</string>
@@ -139,6 +163,10 @@
     <string name="announce_stop_reached" tools:ignore="PluralsCandidate">Stop %1$d reached: %2$s.</string>
     <string name="announce_stop_solved">%1$s is solved.</string>
     <string name="announce_finished">End of the line.</string>
+    <!-- Such as "From the puzzle master: Hurry, the museum closes at 5." -->
+    <string name="announce_message">From the puzzle master: %1$s</string>
+    <string name="announce_challenge">A challenge from the puzzle master: %1$s</string>
+    <string name="announce_challenge_answered">The challenge is answered. Show the confirmation to the staff.</string>
     <string name="announce_puzzle_started">The puzzle is started.</string>
     <string name="announce_solved">Solved.</string>
     <!-- Such as "Solved: A piano." -->

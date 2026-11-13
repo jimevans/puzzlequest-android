@@ -17,8 +17,13 @@ open one: the stop they're on first, then the stops they've solved, each with
 its times and solution, and once they finish, the end of the line and, in a
 race, the standings. The stop they're on opens to its puzzle: they activate
 it by scanning its QR code or typing its code, read it (text, a picture, a
-recording or a film), reveal hints, answer, and go on to the next stop. It
-never says how many stops a quest has.
+recording or a film), reveal hints, answer, and go on to the next stop. The
+puzzle master's messages pop up over the quest as they arrive, each once on
+this phone; a challenge is answered there, and a right answer shows the
+confirmation to show the venue's staff, kept at the top of the quest until
+the player hides it. Everything the puzzle master has sent is in the quest's
+history. It never says how many stops a quest has. (Push notifications come
+later.)
 Staff and administrators are pointed to the website, where their tools are.
 Options, from the sign-in screen or the account menu, chooses which
 PuzzleQuest server the app uses (below).
@@ -138,8 +143,9 @@ allowlist (see `ServerAddressPolicy.admit`).
     (who is signed in, and its token), `ServerConnection` (the chosen server
     and its session), `LiveUpdateFollower` (following the
     API's live updates over its websocket, reconnecting after a drop), and
-    models such as `SignInModel`, `HomeModel`, `QuestModel`, `PuzzleModel`
-    and `OptionsModel`, which publish their state as Kotlin flows; and
+    models such as `SignInModel`, `HomeModel`, `QuestModel` (with the puzzle
+    master's messages and challenges), `PuzzleModel` and `OptionsModel`,
+    which publish their state as Kotlin flows; and
     `MarkdownBlock`, which reads a text puzzle's Markdown into blocks the
     app draws itself (HTML in it shows as plain text, as on the web).
   - `src/test`: unit tests. `src/contractTest`: tests against a real server.
@@ -237,7 +243,9 @@ restoring and ending sessions, the home screen's list and clocks,
 following live updates, reading a player's quest and its standings, what's
 announced to TalkBack as a quest changes, the quest screen's model, reading
 a puzzle, the puzzle screen's model (activating, scanning, guessing, hints,
-going on to the next stop), reading Markdown, which
+going on to the next stop), reading Markdown, the puzzle master's messages
+(each shown once on this phone) and challenges (answering, reopening,
+hiding), which
 server addresses each build allows, checking
 a server is PuzzleQuest's, keeping each server's token apart, switching
 servers, and the Options screen's model, against a fake server
@@ -280,7 +288,8 @@ fetch a quest before and after it starts, solve its stop, race two players to
 the standings, reset a quest, and follow a quest's live updates; activate a
 puzzle (refusing a wrong code), reveal its hints, answer it wrongly and then
 rightly, act while the quest is paused, and look for a puzzle after a reset;
-check
+answer the puzzle master's challenge wrongly and then rightly, and check a
+player who can't be texted is reached once their phone is registered; check
 that the check before switching servers accepts a real server, and finds
 nothing where nothing listens. Without
 `PQ_TEST_SERVER_URL` they're skipped.
@@ -310,7 +319,12 @@ through live updates. On a puzzle's screen, they activate it (a wrong code,
 then the right one), reveal a hint and decline the one that gives the solution
 away, answer wrongly and then rightly, and go on to the next stop; see a pause
 and a resume, and a solve by a teammate, through to the finish; and see a
-reset, which the quest screen beneath hears of too. Without `PQ_SERVER_URL` (and with
+reset, which the quest screen beneath hears of too. A challenge from the
+puzzle master pops up as it's sent; they answer it wrongly and then rightly,
+see the confirmation, put it away and reopen it, hide it, and find it in the
+history. Only a player with the app or a phone number can be sent a message,
+so the tests first register a pretend phone for them (`PUT
+/sessions/current/push-target`); the test server sends nothing to it. Without `PQ_SERVER_URL` (and with
 `PQ_RESET_SERVER`, so Options is as a new install has it), they check
 Options starts with Production, choose the test server as a custom one and
 sign in to it (the sign-in screen naming it), and switch back to Production

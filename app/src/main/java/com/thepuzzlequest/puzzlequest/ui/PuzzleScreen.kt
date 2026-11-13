@@ -422,7 +422,7 @@ private fun Hints(hints: List<RevealedHint>) {
  * @param onSubmit sends it, and calls back with whether it was accepted.
  */
 @Composable
-private fun AnswerForm(
+internal fun AnswerForm(
     label: String,
     buttonLabel: String,
     emptyMessage: String,

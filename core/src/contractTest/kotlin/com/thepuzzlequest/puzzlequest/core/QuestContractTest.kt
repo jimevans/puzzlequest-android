@@ -143,4 +143,80 @@ class QuestContractTest {
                 following.cancel()
             }
         }
+
+    @Test
+    fun `a challenge from the puzzle master shows, a wrong answer is refused, and a right one confirms`() =
+        runBlocking {
+            val player = TestSite.newPlayer()
+            val admin = TestSite.adminToken()
+            val questName = TestSite.makeQuest(player.userName, admin)
+            TestSite.start(questName, admin)
+            TestSite.registerPhone(player)
+            TestSite.sendChallenge(questName, player.userName, admin)
+
+            val quest = player.api.playerQuest(questName)!!
+            assertEquals(listOf("What lights the harbour?"), quest.entry.messages.map { it.text })
+            assertTrue(
+                quest.entry.messages
+                    .first()
+                    .isChallenge,
+            )
+            assertEquals("What lights the harbour?", quest.entry.waitingChallenge?.message)
+
+            assertEquals(
+                ChallengeAnswerError.WRONG_ANSWER,
+                challengeRefusal { player.api.answerChallenge(questName, "an organ") },
+            )
+            // Keywords, as puzzle answers: any letter case, with other words.
+            val answered = player.api.answerChallenge(questName, "It's the LIGHTHOUSE!")
+            assertEquals("Show this to the bartender", answered.confirmation)
+
+            val answer =
+                player.api
+                    .playerQuest(questName)!!
+                    .entry.challenge
+                    ?.answer!!
+            assertEquals("Show this to the bartender", answer.confirmation)
+            assertFalse(answer.byText)
+            assertEquals(
+                ChallengeAnswerError.CHANGED,
+                challengeRefusal { player.api.answerChallenge(questName, "lighthouse") },
+            )
+        }
+
+    @Test
+    fun `a player who can't be texted is reached by the puzzle master once their phone is registered`() =
+        runBlocking {
+            val player = TestSite.newPlayer()
+            val admin = TestSite.adminToken()
+            val questName = TestSite.makeQuest(player.userName, admin)
+            TestSite.start(questName, admin)
+
+            // No phone number, and no app: no one to send it to.
+            val refused =
+                try {
+                    TestSite.sendMessage(questName, player.userName, "Hello", admin)
+                    null
+                } catch (error: com.thepuzzlequest.puzzlequest.api.infrastructure.ClientException) {
+                    error
+                }
+            assertEquals(409, refused?.statusCode)
+
+            TestSite.registerPhone(player)
+            TestSite.sendChallenge(questName, player.userName, admin)
+            assertNotNull(
+                player.api
+                    .playerQuest(questName)!!
+                    .entry.waitingChallenge,
+            )
+        }
+
+    /** Why an answer to a challenge was refused, or null if it wasn't. */
+    private suspend fun challengeRefusal(answer: suspend () -> Unit): ChallengeAnswerError? =
+        try {
+            answer()
+            null
+        } catch (error: ApiError) {
+            ChallengeAnswerError.of(error)
+        }
 }

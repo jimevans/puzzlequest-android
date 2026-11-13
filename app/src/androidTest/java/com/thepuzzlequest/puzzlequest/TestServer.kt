@@ -28,6 +28,8 @@ import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestEntrantsInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestPuzzlesInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateUserRequest
 import com.thepuzzlequest.puzzlequest.api.models.EntrantKind
+import com.thepuzzlequest.puzzlequest.api.models.PushTarget
+import com.thepuzzlequest.puzzlequest.api.models.SendQuestTextMessageRequest
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
 import com.thepuzzlequest.puzzlequest.api.models.StopStatus
 import com.thepuzzlequest.puzzlequest.core.ApiJson
@@ -186,6 +188,33 @@ object TestServer {
             .signIn(SignInRequest(player, password, SignInRequest.Client.native))
             .token!!
 
+    /**
+     * As the puzzle master, sends the player a challenge whose answer is
+     * "lighthouse", and whose confirmation is "Show this to the bartender".
+     * It first registers a phone for the player on another session of
+     * theirs, since only players with the app or a phone number to text can
+     * be sent one; the test server sends nothing to it.
+     */
+    fun sendChallenge(
+        questName: String,
+        player: String,
+        message: String,
+        admin: String,
+    ) {
+        SessionsApi(baseUrl, http).apply { accessTokenProvider = { token(player) } }.setPushTarget(
+            PushTarget(PushTarget.Platform.android, unique("phone"), PushTarget.Environment.development),
+        )
+        RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { admin } }.sendPlayerTextMessage(
+            questName,
+            player,
+            SendQuestTextMessageRequest(
+                message,
+                expectedResponse = "lighthouse",
+                responseConfirmation = "Show this to the bartender",
+            ),
+        )
+    }
+
     /** A stop's activation code, as the administrator sees it. */
     fun activationCode(
         questName: String,
@@ -262,6 +291,16 @@ fun ComposeTestRule.waitFor(
     tag: String,
     timeoutMillis: Long = 30_000,
 ) = waitUntilExactlyOneExists(hasTestTag(tag), timeoutMillis)
+
+/**
+ * Waits for one node with the tag inside something TalkBack reads as one
+ * item (merged, as a card is). The merged tree, which tests search by
+ * default, keeps only the item's own tag, so this searches the unmerged one.
+ */
+fun ComposeTestRule.waitForInside(
+    tag: String,
+    timeoutMillis: Long = 30_000,
+) = waitUntil(timeoutMillis) { onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
 
 /** Waits until a screen's live updates are connected (its marker, shown with PQ_UI_TESTING, says so). */
 fun ComposeTestRule.waitForLiveUpdates(tag: String) =
