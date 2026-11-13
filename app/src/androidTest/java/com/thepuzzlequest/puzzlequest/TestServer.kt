@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -154,7 +155,10 @@ fun ComposeTestRule.signIn(
     waitFor("sign-in.user-name")
     onNodeWithTag("sign-in.user-name").performTextInput(userName)
     onNodeWithTag("sign-in.password").performTextInput(password)
-    onNodeWithTag("sign-in.submit").performClick()
+    // On a small screen, the keyboard covers the button: scroll it into view
+    // above the keyboard first, as a person would, or the tap lands on the
+    // keyboard.
+    onNodeWithTag("sign-in.submit").performScrollTo().performClick()
 }
 
 /** Signs out through the home screen's account menu. */

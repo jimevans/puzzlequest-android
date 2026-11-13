@@ -8,6 +8,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import org.junit.Before
 import org.junit.Rule
@@ -100,7 +101,8 @@ class OptionsUiTest {
         compose.onNodeWithTag("options.server.custom").performClick()
         compose.waitFor("options.custom-address", 10_000)
         compose.onNodeWithTag("options.custom-address").performTextInput(TestServer.url)
-        compose.onNodeWithTag("options.use-custom").performClick()
+        // Scrolled into view above the keyboard, which covers it on a small screen.
+        compose.onNodeWithTag("options.use-custom").performScrollTo().performClick()
         // Switching rebuilds the screens for the new server, closing Options.
         compose.waitUntilDoesNotExist(hasTestTag("options.server.custom"), 30_000)
         // Options can close a frame before the old server's screens are
