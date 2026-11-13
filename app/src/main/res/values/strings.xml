@@ -82,6 +82,54 @@
     <string name="time">Time</string>
     <string name="hint_penalties">Hint penalties</string>
     <string name="total">Total</string>
+    <!-- The label on the current stop's card, which opens its puzzle -->
+    <string name="open_the_puzzle">Open the puzzle</string>
+
+    <!-- A stop's puzzle -->
+    <string name="loading_puzzle">Loading the puzzle…</string>
+    <string name="puzzle_not_available">Puzzle not available</string>
+    <string name="puzzle_not_available_message">The puzzle master may have reset the quest, or it may no longer be yours to play.</string>
+    <string name="back_to_quest">Back to the quest</string>
+    <string name="puzzle_no_longer_available">This puzzle is no longer available.</string>
+    <string name="puzzle_load_failed">Couldn\'t load this puzzle</string>
+    <string name="activate_scan_or_type">You\'ve found this puzzle\'s place. Scan its QR code, or enter its code, to begin.</string>
+    <string name="activate_type">You\'ve found this puzzle\'s place. Enter its code to begin.</string>
+    <string name="activate_scan_failed">We couldn\'t scan the QR code, so enter this puzzle\'s code to begin.</string>
+    <string name="scan_qr_code">Scan the QR code</string>
+    <string name="activation_code">Activation code</string>
+    <string name="start_this_puzzle">Start this puzzle</string>
+    <string name="enter_the_code">Enter the code</string>
+    <string name="your_answer">Your answer</string>
+    <string name="check_answer">Check answer</string>
+    <string name="enter_your_answer">Enter your answer</string>
+    <string name="sending">Sending</string>
+    <string name="reveal_hint">Reveal next hint</string>
+    <!-- Such as "Reveal next hint (+1:00)": the time it adds -->
+    <string name="reveal_hint_cost">Reveal next hint (+%1$s)</string>
+    <!-- What TalkBack says for the button, such as "Reveal next hint, adding 1 minute to your time" -->
+    <string name="reveal_hint_cost_spoken">Reveal next hint, adding %1$s to your time</string>
+    <string name="give_away_solution">Give away the solution?</string>
+    <string name="give_away_solution_message">The next hint shows you the solution.</string>
+    <string name="show_it">Show it</string>
+    <string name="keep_trying">Keep trying</string>
+    <string name="hints">Hints</string>
+    <!-- Which hint it is, from 1, such as "Hint 1" -->
+    <string name="hint_number" tools:ignore="PluralsCandidate">Hint %1$d</string>
+    <!-- Such as "Hint 1, +1:00": which hint, and the time it added -->
+    <string name="hint_number_cost">Hint %1$d, +%2$s</string>
+    <!-- The button to go on, such as "On to The Lighthouse" -->
+    <string name="on_to">On to %1$s</string>
+    <string name="picture">Picture</string>
+    <string name="picture_failed">Couldn\'t load this picture</string>
+    <string name="puzzle_wrong_code">That isn\'t this puzzle\'s code. Check it and try again.</string>
+    <string name="puzzle_wrong_answer">That\'s not the answer. Try again.</string>
+    <string name="puzzle_paused">The puzzle master has paused the quest. Try again once it resumes.</string>
+    <string name="puzzle_too_many_attempts">That\'s a lot of tries in a short time. Wait a minute, then try again.</string>
+    <string name="puzzle_no_more_hints">This puzzle has no more hints.</string>
+    <string name="puzzle_changed">This puzzle changed meanwhile, perhaps solved by a teammate. Here\'s where it stands now.</string>
+    <string name="puzzle_try_again">Someone else acted at the same moment. Try again.</string>
+    <string name="puzzle_unreachable">Couldn\'t reach the server. Check your connection and try again.</string>
+    <string name="puzzle_unexpected">Something went wrong. Try again.</string>
 
     <!-- What TalkBack says as the quest changes on screen -->
     <string name="announce_paused">Paused by the puzzle master. The clock is stopped.</string>
@@ -91,6 +139,13 @@
     <string name="announce_stop_reached" tools:ignore="PluralsCandidate">Stop %1$d reached: %2$s.</string>
     <string name="announce_stop_solved">%1$s is solved.</string>
     <string name="announce_finished">End of the line.</string>
+    <string name="announce_puzzle_started">The puzzle is started.</string>
+    <string name="announce_solved">Solved.</string>
+    <!-- Such as "Solved: A piano." -->
+    <string name="announce_solved_with">Solved: %1$s.</string>
+    <string name="announce_skipped">Skipped by the puzzle master.</string>
+    <!-- Such as "Hint: It makes music" -->
+    <string name="announce_hint">Hint: %1$s</string>
     <!-- Another team finishing a race, such as "Gulls finished 2nd." -->
     <string name="announce_rival_finished">%1$s finished %2$s.</string>
     <!-- Such as "Final standings: Gulls won." or "Final standings: Gulls and Crabs won." -->

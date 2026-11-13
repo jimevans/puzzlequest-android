@@ -89,6 +89,7 @@ fun QuestScreen(
     uiTesting: Boolean,
     onBack: () -> Unit,
     onOpenStop: (StopRoute) -> Unit,
+    onOpenPuzzle: (PuzzleRoute) -> Unit,
 ) {
     val state by quest.model.state.collectAsStateWithLifecycle()
     val refreshing by quest.refreshing.collectAsStateWithLifecycle()
@@ -116,7 +117,7 @@ fun QuestScreen(
             when {
                 shown != null -> {
                     PullToRefreshBox(isRefreshing = refreshing, onRefresh = quest::refresh) {
-                        QuestProgressList(shown, state.standings, onOpenStop)
+                        QuestProgressList(shown, state.standings, onOpenStop, onOpenPuzzle)
                     }
                 }
 
@@ -158,6 +159,7 @@ private fun QuestProgressList(
     quest: PlayerQuest,
     standings: Standings?,
     onOpenStop: (StopRoute) -> Unit,
+    onOpenPuzzle: (PuzzleRoute) -> Unit,
 ) {
     val entry = quest.entry
     LazyColumn(
@@ -176,7 +178,14 @@ private fun QuestProgressList(
             }
         }
         item { Summary(entry) }
-        entry.currentStop?.let { stop -> item { CurrentStopCard(stop) } }
+        entry.currentStop?.let { stop ->
+            item {
+                CurrentStopCard(
+                    stop,
+                    onOpen = { onOpenPuzzle(PuzzleRoute(quest.questName, stop.puzzleName, stop.displayName)) },
+                )
+            }
+        }
         if (entry.isFinished) {
             item { Finish(quest) }
             standings?.let { standingsSection(it, entry) }
@@ -226,16 +235,23 @@ private fun Summary(entry: QuestEntryProgress) {
 
 /**
  * The stop being played, large, on the brand's aubergine, as on the website:
- * its number, name, where it stands, and its time.
+ * its number, name, where it stands, and its time. Tapping it opens its
+ * puzzle.
  */
 @Composable
-private fun CurrentStopCard(stop: Stop) {
+private fun CurrentStopCard(
+    stop: Stop,
+    onOpen: () -> Unit,
+) {
+    val open = stringResource(R.string.open_the_puzzle)
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(Brand.Aubergine)
+                // TalkBack says what tapping does: "Double-tap to open the puzzle".
+                .clickable(onClickLabel = open, onClick = onOpen)
                 .semantics(mergeDescendants = true) {}
                 .testTag("quest.current-stop")
                 .padding(20.dp),
@@ -255,20 +271,40 @@ private fun CurrentStopCard(stop: Stop) {
                 MaterialTheme.typography.titleLarge.copy(color = Color.White),
             )
         }
+        // What tapping does, in gold; TalkBack hears it as the action instead.
+        Text(
+            open,
+            style = MaterialTheme.typography.titleSmall,
+            color = Brand.Aubergine,
+            modifier =
+                Modifier
+                    .padding(top = 6.dp)
+                    .clip(CircleShape)
+                    .background(Brand.Gold)
+                    .clearAndSetSemantics {}
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 
-/** The end of the line, in gold on aubergine, as on the website. */
 @Composable
-private fun Finish(quest: PlayerQuest) {
+private fun Finish(quest: PlayerQuest) =
+    EndOfTheLine(quest.displayName, quest.entry.clock.totalMs, Modifier.testTag("quest.finished"))
+
+/** A quest's finish, in gold on aubergine, as on the website: on the quest's screen, and its last puzzle's. */
+@Composable
+fun EndOfTheLine(
+    questDisplayName: String,
+    totalMs: Long,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(Brand.Aubergine)
                 .semantics(mergeDescendants = true) {}
-                .testTag("quest.finished")
                 .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -284,7 +320,7 @@ private fun Finish(quest: PlayerQuest) {
             modifier = Modifier.semantics { heading() },
         )
         Text(
-            stringResource(R.string.quest_finished, quest.displayName, QuestClock.format(quest.entry.clock.totalMs)),
+            stringResource(R.string.quest_finished, questDisplayName, QuestClock.format(totalMs)),
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White,
         )
@@ -601,7 +637,7 @@ private fun BackButton(
 }
 
 @Composable
-private fun Loading(text: String) {
+internal fun Loading(text: String) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
@@ -614,7 +650,7 @@ private fun Loading(text: String) {
 
 /** Something that can't be shown: why, and what to do. */
 @Composable
-private fun Unavailable(
+internal fun Unavailable(
     title: String,
     message: String?,
     action: String,
@@ -686,7 +722,7 @@ private fun announcement(changes: List<QuestChange>): String {
  * Locale.getDefault(), the screen is redrawn if the phone's language changes.
  */
 @Composable
-private fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
+internal fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 
 /** An entry's name, or what it was if it has been deleted. */
 @Composable

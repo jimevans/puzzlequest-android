@@ -1,6 +1,7 @@
 package com.thepuzzlequest.puzzlequest.core
 
 import com.thepuzzlequest.puzzlequest.api.apis.EmailVerificationApi
+import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.QuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.SessionsApi
 import com.thepuzzlequest.puzzlequest.api.apis.SpectatingApi
@@ -9,6 +10,9 @@ import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientError
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientException
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerError
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerException
+import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
+import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
+import com.thepuzzlequest.puzzlequest.api.models.RevealHintRequest
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +67,8 @@ class PuzzleQuestApi(
         QuestsApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
     private val spectating =
         SpectatingApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
+    private val playing =
+        PlayingApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
 
     /** Signs in as an app, which is given the session's token to keep. */
     suspend fun signIn(
@@ -131,6 +137,60 @@ class PuzzleQuestApi(
      * quest. Each can be used once.
      */
     suspend fun questLiveTicket(questName: String): String = call { spectating.createLiveTicket(questName) }.ticket
+
+    /**
+     * A stop's puzzle as its players see it, or null if it isn't theirs to
+     * see: not reached, or gone, as once the puzzle master has reset the
+     * quest.
+     */
+    suspend fun playerPuzzle(
+        questName: String,
+        puzzleName: String,
+    ): PlayerPuzzle? {
+        val puzzle =
+            try {
+                call { playing.getPlayerPuzzle(questName, puzzleName) }
+            } catch (error: ApiError.Refused) {
+                if (error.problem.status == 404) return null
+                throw error
+            }
+        return PlayerPuzzle(puzzle, server)
+    }
+
+    /**
+     * Starts the puzzle the players have found, with its activation code,
+     * typed or read from its QR code.
+     *
+     * @param connectionId the live-update connection, which then isn't sent
+     *   the update about it: the screen shows the result itself.
+     */
+    suspend fun activatePuzzle(
+        questName: String,
+        puzzleName: String,
+        code: String,
+        connectionId: String?,
+    ) {
+        call { playing.activatePuzzle(questName, puzzleName, ActivatePuzzleRequest(code, connectionId)) }
+    }
+
+    /** Guesses a puzzle's solution. A wrong guess is refused, as `/problems/wrong-answer`. */
+    suspend fun attemptSolution(
+        questName: String,
+        puzzleName: String,
+        guess: String,
+        connectionId: String?,
+    ) {
+        call { playing.attemptSolution(questName, puzzleName, AttemptSolutionRequest(guess, connectionId)) }
+    }
+
+    /** Reveals a puzzle's next hint, adding its penalty to the players' time. */
+    suspend fun revealHint(
+        questName: String,
+        puzzleName: String,
+        connectionId: String?,
+    ) {
+        call { playing.revealHint(questName, puzzleName, RevealHintRequest(connectionId)) }
+    }
 
     /** Sends the user another email with the link that verifies their address. */
     suspend fun sendVerificationEmail(userName: String) {
