@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The window behind Compose, light or dark with the phone; the screens'
+         look is in ui/theme. -->
+    <style name="Theme.PuzzleQuest.Base" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.PuzzleQuest" parent="Theme.PuzzleQuest.Base" />
+</resources>

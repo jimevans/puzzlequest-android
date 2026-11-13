@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    # Linux, for the emulator's hardware acceleration (KVM).
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 17
+      # Gradle, its downloads and its build cache, kept between runs; it also
+      # checks the wrapper is Gradle's own.
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # The test server is the API's own repository, which runs on Node 24.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          # npm's downloads for the test server, kept between runs: they
+          # change only when the app moves to another release of the API.
+          cache: npm
+          cache-dependency-path: api/VERSION
+
+      # The description the client is generated from must be the pinned
+      # release's, with scripts/client-openapi.jq applied.
+      - name: Check the generated client's description
+        run: |
+          scripts/update-api.sh
+          git diff --exit-code core/openapi.json
+
+      - name: Formatting
+        run: ./gradlew spotlessCheck
+
+      - name: Unit tests, lint, and the app's builds
+        run: ./gradlew :core:test :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease
+
+      - name: Start the test server
+        run: |
+          scripts/start-test-server.sh
+          set -a; source .test-server/env; set +a
+          for name in $(sed -n 's/=.*//p' .test-server/env); do
+            echo "$name=${!name}" >> "$GITHUB_ENV"
+          done
+
+      # Without the server's variables the tests would be skipped, not run.
+      - name: Contract tests (against the test server)
+        run: |
+          : "${PQ_TEST_SERVER_URL:?the test server is not set}"
+          ./gradlew :core:contractTest
+
+      - name: Let the emulator use hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: UI tests (in the emulator, against the test server)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 37
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: ./gradlew :app:connectedDebugAndroidTest
+
+      - name: Stop the test server
+        if: always()
+        run: scripts/stop-test-server.sh
+
+      - name: Keep the test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results
+          path: |
+            */build/reports/
+            app/build/outputs/androidTest-results/
+            .test-server/*.log
+          if-no-files-found: ignore

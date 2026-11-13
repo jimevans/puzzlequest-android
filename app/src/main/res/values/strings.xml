@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">PuzzleQuest</string>
+
+    <!-- Checking the session kept from before -->
+    <string name="restoring">Signing in…</string>
+    <string name="restore_failed_title">Can\'t reach PuzzleQuest</string>
+    <string name="restore_failed_message">Check your internet connection, then try again.</string>
+    <string name="try_again">Try again</string>
+
+    <!-- Signing in -->
+    <string name="sign_in_title">Sign in</string>
+    <string name="user_name">User name</string>
+    <string name="password">Password</string>
+    <string name="sign_in">Sign in</string>
+    <string name="signing_in">Signing in</string>
+    <string name="sign_in_wrong_user_name_or_password">That user name and password don\'t match an account. Check them and try again.</string>
+    <string name="sign_in_too_many_attempts">Too many attempts to sign in. Wait a few minutes, then try again.</string>
+    <string name="sign_in_invalid_request">PuzzleQuest couldn\'t accept that. Check your user name and password, then try again.</string>
+    <string name="sign_in_unreachable">Can\'t reach PuzzleQuest. Check your internet connection, then try again.</string>
+    <string name="sign_in_unexpected">Something went wrong at PuzzleQuest. Try again in a moment.</string>
+
+    <!-- Signed in (a placeholder until the home screen) -->
+    <string name="signed_in_as">Signed in as %1$s</string>
+    <string name="sign_out">Sign out</string>
+</resources>

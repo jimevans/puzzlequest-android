@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Versions are pinned on purpose, each out at least two weeks when
+         chosen (gradle/libs.versions.toml); moving is a deliberate change. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <!-- The logo's traced outline (from the brand's logo.svg) is long, but
+         it's drawn once at each size and cached. -->
+    <issue id="VectorPath">
+        <ignore path="src/main/res/drawable/logo.xml" />
+        <ignore path="src/main/res/drawable/ic_launcher_foreground.xml" />
+        <ignore path="src/main/res/drawable/ic_launcher_monochrome.xml" />
+    </issue>
+</lint>
