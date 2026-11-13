@@ -74,7 +74,9 @@ jobs:
       - name: UI tests (in the emulator, against the test server)
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 37
+          # Android 17's SDK packages are named by minor version too
+          # (platforms;android-37.0); quoted, so YAML keeps the ".0".
+          api-level: "37.0"
           target: google_apis
           arch: x86_64
           disable-animations: true
