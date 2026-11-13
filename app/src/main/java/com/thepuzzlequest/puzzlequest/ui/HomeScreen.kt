@@ -54,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.HomeViewModel
+import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
 import com.thepuzzlequest.puzzlequest.core.SignedInUser
 import kotlinx.coroutines.delay
@@ -68,6 +69,12 @@ object QuestsRoute
 data class QuestRoute(
     val questName: String,
     val displayName: String,
+)
+
+/** A solved stop's details, opened from its quest. */
+@Serializable
+data class StopRoute(
+    val puzzleName: String,
 )
 
 /**
@@ -91,7 +98,25 @@ fun HomeScreen(
             QuestList(app, home, user, uiTesting, onOpen = { navigation.navigate(it) })
         }
         composable<QuestRoute> { entry ->
-            QuestPlaceholderScreen(entry.toRoute(), onBack = { navigation.popBackStack() })
+            val route = entry.toRoute<QuestRoute>()
+            // Inside a destination, viewModel() gives the screen one of its
+            // own, kept until the player goes back from it.
+            val quest = viewModel { QuestViewModel(route.questName, server.session.api) }
+            QuestScreen(
+                route,
+                quest,
+                uiTesting,
+                onBack = { navigation.popBackStack() },
+                onOpenStop = { navigation.navigate(it) },
+            )
+        }
+        composable<StopRoute> { entry ->
+            // The quest's own ViewModel, from the quest's place in the back
+            // stack beneath this one, so the details follow the quest's
+            // updates.
+            val questEntry = remember(entry) { navigation.getBackStackEntry<QuestRoute>() }
+            val quest = viewModel<QuestViewModel>(questEntry)
+            StopDetailScreen(quest.model, entry.toRoute<StopRoute>().puzzleName, onBack = { navigation.popBackStack() })
         }
     }
 }
@@ -180,7 +205,7 @@ private fun QuestList(
                 }
             }
             Announcement(stringResource(R.string.quests_updated), state.liveChanges)
-            if (uiTesting) LiveUpdatesMarker(state.isLive)
+            if (uiTesting) LiveUpdatesMarker("home.live-updates", state.isLive)
         }
     }
 }
@@ -270,20 +295,6 @@ fun Announcement(
         Modifier.size(1.dp).semantics {
             liveRegion = LiveRegionMode.Polite
             contentDescription = saying
-        },
-    )
-}
-
-/**
- * For the UI tests only (debug builds started with PQ_UI_TESTING): whether
- * live updates are connected, as the web app's data-live-updates attribute
- * says, so a test can wait for it before changing something.
- */
-@Composable
-private fun LiveUpdatesMarker(isLive: Boolean) {
-    Box(
-        Modifier.size(1.dp).testTag("home.live-updates").semantics {
-            stateDescription = if (isLive) "connected" else "connecting"
         },
     )
 }

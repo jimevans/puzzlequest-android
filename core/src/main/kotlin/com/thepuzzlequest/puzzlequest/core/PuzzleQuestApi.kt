@@ -1,7 +1,9 @@
 package com.thepuzzlequest.puzzlequest.core
 
 import com.thepuzzlequest.puzzlequest.api.apis.EmailVerificationApi
+import com.thepuzzlequest.puzzlequest.api.apis.QuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.SessionsApi
+import com.thepuzzlequest.puzzlequest.api.apis.SpectatingApi
 import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientError
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientException
@@ -57,6 +59,10 @@ class PuzzleQuestApi(
         UsersApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
     private val emailVerification =
         EmailVerificationApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
+    private val quests =
+        QuestsApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
+    private val spectating =
+        SpectatingApi(baseUrl, http).apply { accessTokenProvider = { tokens.read() } }
 
     /** Signs in as an app, which is given the session's token to keep. */
     suspend fun signIn(
@@ -100,6 +106,31 @@ class PuzzleQuestApi(
      * user's list of quests. Each can be used once.
      */
     suspend fun userLiveTicket(userName: String): String = call { users.createUserLiveTicket(userName) }.ticket
+
+    /**
+     * A quest as its player sees it, or null if it isn't theirs to see: not
+     * found, or with no entry of theirs, as once the puzzle master has reset
+     * it.
+     */
+    suspend fun playerQuest(questName: String): PlayerQuest? {
+        val quest =
+            try {
+                call { quests.getQuest(questName) }
+            } catch (error: ApiError.Refused) {
+                if (error.problem.status == 404) return null
+                throw error
+            }
+        return playerQuest(quest)
+    }
+
+    /** A quest's standings, as anyone who may follow it sees them. */
+    suspend fun standings(questName: String): Standings = Standings(call { spectating.getSpectatorQuest(questName) })
+
+    /**
+     * A ticket for one connection to the live-update websocket to follow a
+     * quest. Each can be used once.
+     */
+    suspend fun questLiveTicket(questName: String): String = call { spectating.createLiveTicket(questName) }.ticket
 
     /** Sends the user another email with the link that verifies their address. */
     suspend fun sendVerificationEmail(userName: String) {

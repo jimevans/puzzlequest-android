@@ -3,7 +3,6 @@ package com.thepuzzlequest.puzzlequest.core
 import com.thepuzzlequest.puzzlequest.api.models.Clock
 import java.time.Duration
 import java.time.Instant
-import com.thepuzzlequest.puzzlequest.api.models.QuestStatus as ApiQuestStatus
 import com.thepuzzlequest.puzzlequest.api.models.QuestSummary as ApiQuestSummary
 
 /**
@@ -88,13 +87,7 @@ internal fun QuestSummary(summary: ApiQuestSummary) =
     QuestSummary(
         questName = summary.questName,
         displayName = summary.displayName,
-        status =
-            when (summary.status) {
-                ApiQuestStatus.notStarted -> QuestStatus.NOT_STARTED
-                ApiQuestStatus.inProgress -> QuestStatus.IN_PROGRESS
-                ApiQuestStatus.completed -> QuestStatus.COMPLETED
-                ApiQuestStatus.unknown_default_open_api -> QuestStatus.OTHER
-            },
+        status = QuestStatus(summary.status),
         statusDescription = summary.statusDescription,
         paused = summary.paused,
         progress = QuestClock(summary.progress),

@@ -77,15 +77,7 @@ fun QuestTime(
     clock: QuestClock,
     style: TextStyle,
 ) {
-    // Redraws on each second of the quest's own clock. TalkBack doesn't read
-    // out the change; it reads the time when it reaches the row.
-    val now by produceState(Instant.now(), clock) {
-        while (clock.isCounting) {
-            value = Instant.now()
-            delay(1_000 - Math.floorMod(clock.elapsedMs(value), 1_000L))
-        }
-    }
-    val milliseconds = clock.totalMs(now)
+    val milliseconds = clock.totalMs(rememberNow(clock))
     val spoken = stringResource(R.string.quest_time, spoken(milliseconds))
     IconAndText(
         R.drawable.ic_timer,
@@ -94,6 +86,52 @@ fun QuestTime(
         style.copy(fontFeatureSettings = "tnum"),
         // "Time: 1 hour, 4 minutes, 5 seconds" rather than "1:04:05".
         Modifier.semantics { contentDescription = spoken },
+    )
+}
+
+/**
+ * The time now, changing on each second of the clock while it counts, so a
+ * screen showing it redraws then. TalkBack doesn't read out the change; it
+ * reads the time when it reaches it.
+ */
+@Composable
+fun rememberNow(clock: QuestClock): Instant {
+    // produceState runs the loop while the clock is on screen, and starts it
+    // afresh when the clock changes.
+    val now by produceState(Instant.now(), clock) {
+        while (clock.isCounting) {
+            value = Instant.now()
+            delay(1_000 - Math.floorMod(clock.elapsedMs(value), 1_000L))
+        }
+    }
+    return now
+}
+
+/** Which of a clock's times to show. */
+enum class ClockPart {
+    /** The time spent, without penalties. */
+    ELAPSED,
+
+    /** The time spent plus penalties: the score. */
+    TOTAL,
+}
+
+/** A clock's time, counting up each second while it runs; TalkBack hears it in words. */
+@Composable
+fun ClockText(
+    clock: QuestClock,
+    part: ClockPart,
+    style: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    val now = rememberNow(clock)
+    val milliseconds = if (part == ClockPart.TOTAL) clock.totalMs(now) else clock.elapsedMs(now)
+    val spoken = spoken(milliseconds)
+    Text(
+        QuestClock.format(milliseconds),
+        // Digits of equal width, so the time doesn't jiggle as it counts.
+        style = style.copy(fontFeatureSettings = "tnum"),
+        modifier = modifier.semantics { contentDescription = spoken },
     )
 }
 
@@ -111,7 +149,7 @@ private fun IconAndText(
 }
 
 /** A time in words, in the phone's language, such as "1 hour, 4 minutes, 5 seconds". */
-private fun spoken(milliseconds: Long): String {
+fun spoken(milliseconds: Long): String {
     val seconds = maxOf(0, milliseconds / 1000)
     val parts =
         listOf(
