@@ -11,7 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.PuzzlesApi
@@ -328,6 +330,24 @@ fun ComposeTestRule.waitForLiveUpdates(tag: String) =
             ?.getOrNull(SemanticsProperties.StateDescription) == "connected"
     }
 
+/**
+ * Types into a field (replacing what's there), then taps a button. The
+ * keyboard is closed between, and the button scrolled into view: while the
+ * keyboard slides up, the screen moves, and a tap can land where the button
+ * no longer is (as on CI's slow emulator), or on the keyboard itself.
+ */
+fun ComposeTestRule.typeThenTap(
+    field: String,
+    text: String,
+    button: String,
+) {
+    onNodeWithTag(field).performScrollTo().performTextReplacement(text)
+    waitForIdle()
+    Espresso.closeSoftKeyboard()
+    waitForIdle()
+    onNodeWithTag(button).performScrollTo().performClick()
+}
+
 fun ComposeTestRule.signIn(
     userName: String,
     password: String,
@@ -335,6 +355,9 @@ fun ComposeTestRule.signIn(
     waitFor("sign-in.user-name")
     onNodeWithTag("sign-in.user-name").performTextInput(userName)
     onNodeWithTag("sign-in.password").performTextInput(password)
+    waitForIdle()
+    Espresso.closeSoftKeyboard()
+    waitForIdle()
     // On a small screen, the keyboard covers the button: scroll it into view
     // above the keyboard first, as a person would, or the tap lands on the
     // keyboard.

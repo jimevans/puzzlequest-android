@@ -135,18 +135,12 @@ class QuestUiTest {
             compose.waitFor("quest.challenge.message", 15_000)
             compose.onNodeWithTag("quest.challenge.message").assertTextEquals("What lights the harbour?")
 
-            compose.onNodeWithTag("quest.challenge.answer").performScrollTo().performTextReplacement("an organ")
-            compose.onNodeWithTag("quest.challenge.answer.send").performScrollTo().performClick()
+            compose.typeThenTap("quest.challenge.answer", "an organ", "quest.challenge.answer.send")
             compose.waitFor("quest.challenge.error", 15_000)
             compose.onNodeWithTag("quest.challenge.error").assertTextContains("not the answer", substring = true)
 
             // Keywords, as puzzle answers: other words around it are fine.
-            compose
-                .onNodeWithTag(
-                    "quest.challenge.answer",
-                ).performScrollTo()
-                .performTextReplacement("It's the Lighthouse!")
-            compose.onNodeWithTag("quest.challenge.answer.send").performScrollTo().performClick()
+            compose.typeThenTap("quest.challenge.answer", "It's the Lighthouse!", "quest.challenge.answer.send")
             compose.waitForInside("quest.challenge.confirmation", 15_000)
             compose
                 .onNodeWithTag("quest.challenge.confirmation", useUnmergedTree = true)

@@ -43,13 +43,12 @@ class PuzzleUiTest {
         compose.waitForLiveUpdates("puzzle.live-updates")
     }
 
-    /** Types into a field, replacing what's there, and sends it with its button (scrolled into view above the keyboard). */
+    /** Types into a field, replacing what's there, and sends it with its button. */
     private fun send(
         text: String,
         tag: String,
     ) {
-        compose.onNodeWithTag(tag).performScrollTo().performTextReplacement(text)
-        compose.onNodeWithTag("$tag.send").performScrollTo().performClick()
+        compose.typeThenTap(tag, text, "$tag.send")
     }
 
     @Test
