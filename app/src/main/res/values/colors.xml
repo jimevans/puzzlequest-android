@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The brand's colors (brand/README.md in the server repository); the app's
+     screens take theirs from ui/theme/Color.kt. -->
+<resources>
+    <color name="aubergine">#FF2A1638</color>
+</resources>

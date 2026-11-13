@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen: the icon's pale gold piece on aubergine. -->
+    <style name="Theme.PuzzleQuest" parent="Theme.PuzzleQuest.Base">
+        <item name="android:windowSplashScreenBackground">@color/aubergine</item>
+    </style>
+</resources>
