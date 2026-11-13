@@ -6,7 +6,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Whether anyone is signed in, kept across launches by the session's token. */
 class SessionStore(
-    private val api: PuzzleQuestApi,
+    /** The API, sending this session's token; screens make their calls with it. */
+    val api: PuzzleQuestApi,
     private val tokens: TokenStore,
 ) {
     sealed interface State {
@@ -50,6 +51,26 @@ class SessionStore(
                     State.RestoreFailed
                 }
             }
+    }
+
+    /**
+     * Asks the server again who is signed in, to pick up changes made
+     * elsewhere, such as an email address verified on the website. If the
+     * session has ended, it's forgotten; if the server can't be reached,
+     * nothing changes.
+     */
+    suspend fun refreshUser() {
+        if (state.value !is State.SignedIn) return
+        try {
+            val user = api.currentUser()
+            // Unless signed out while asking.
+            if (state.value is State.SignedIn) mutableState.value = State.SignedIn(user)
+        } catch (error: ApiError) {
+            if (error is ApiError.Refused && error.problem.status == 401) {
+                tokens.delete()
+                mutableState.value = State.SignedOut
+            }
+        }
     }
 
     /** @throws ApiError if the server refused, or couldn't be reached. */

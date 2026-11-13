@@ -11,7 +11,9 @@ decision record `docs/decisions/0021-native-apps.md`. Its companion is the iOS
 app, [puzzlequest-ios](https://github.com/jimevans/puzzlequest-ios), which
 this app follows screen for screen.
 
-So far it signs in and out, and keeps its session between launches.
+So far players can sign in and out (the session is kept between launches),
+and see their quests, kept up to date live as they start, pause and change.
+Staff and administrators are pointed to the website, where their tools are.
 
 ## Requirements
 
@@ -33,8 +35,9 @@ So far it signs in and out, and keeps its session between launches.
 
 Every library and build plugin is pinned to an exact version in
 `gradle/libs.versions.toml`, each out at least two weeks when chosen. The
-app's own libraries are Jetpack Compose with Material 3, kotlinx.coroutines
-and kotlinx.serialization, and OkHttp (for the API client).
+app's own libraries are Jetpack Compose with Material 3 and Navigation
+Compose, kotlinx.coroutines and kotlinx.serialization, and OkHttp (for the API
+client and the live-update websocket).
 
 ## Running the app
 
@@ -81,8 +84,10 @@ adb shell am start -n com.thepuzzlequest.puzzlequest/.MainActivity --es PQ_SERVE
     `core/build/generated/openapi`. Nothing in it is written by hand.
   - `src/main/kotlin`: what the screens use: `PuzzleQuestApi` (the calls,
     returning the app's own types and throwing `ApiError`), `SessionStore`
-    (who is signed in, and its token), and models such as `SignInModel`,
-    which publish their state as Kotlin flows.
+    (who is signed in, and its token), `LiveUpdateFollower` (following the
+    API's live updates over its websocket, reconnecting after a drop), and
+    models such as `SignInModel` and `HomeModel`, which publish their state
+    as Kotlin flows.
   - `src/test`: unit tests. `src/contractTest`: tests against a real server.
 - `api/`: the pinned API release: its description (`openapi.json`), its
   live-update messages (`live-updates.json`), what push notifications carry
@@ -138,7 +143,15 @@ copes with those as `core/build.gradle.kts` sets it up:
   limit after 24 days.
 
 The script changes only what the generator can't turn into working code;
-`scripts/client-openapi.jq` explains it.
+`scripts/client-openapi.jq` explains it. Two more things are set up in
+`core` itself:
+- `ApiJson` leaves optional fields that aren't set out of requests: the
+  generated client would send them as `null`, which the API takes to mean
+  "set it to null", and refuses where that isn't allowed.
+- The generator can't tell the live-update messages apart (`LiveUpdate` is
+  one of several shapes), so `LiveUpdates.kt` reads each message's `message`
+  field and decodes the generated class it names, such as
+  `LiveUpdatePuzzleSolved`. A message it doesn't know is ignored.
 
 CI checks that the generated-from copy matches what the script writes, and
 the unit tests in `ToleranceTest.kt` check that the client reads such
@@ -165,9 +178,11 @@ warning; `app/lint.xml` lists what's set aside, and why.
 ./gradlew :core:test
 ```
 
-These run on the computer: reading newer responses, explaining errors, and
-restoring and ending sessions against a fake server
-([MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver)).
+These run on the computer: reading newer responses, explaining errors,
+restoring and ending sessions, the home screen's list and clocks, and
+following live updates, against a fake server
+([MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver))
+and a fake websocket, on the coroutine test library's virtual clock.
 
 ### The test server
 
@@ -197,8 +212,11 @@ With the test server's variables loaded:
 ```
 
 They sign in, check the session, sign out, and check the problems the server
-sends for a wrong password, an invalid request, and too many attempts, all
-through the generated client. Without `PQ_TEST_SERVER_URL` they're skipped.
+sends for a wrong password, an invalid request, and too many attempts; make
+quests for new players as the administrator and check they're listed once
+started, and heard of through live updates over the real websocket; and send
+the verification email again, all through the generated client. Without
+`PQ_TEST_SERVER_URL` they're skipped.
 
 ### UI tests, and everything on a phone
 
@@ -212,9 +230,13 @@ connected:
 The build passes the test server's variables on to the tests, and first
 forwards the server's port to the phone (`adb reverse`; with more than one
 phone or emulator connected, set `ANDROID_SERIAL` to choose). The UI tests
-launch the app pointed at the test server, sign in, relaunch to check the
-session is kept, sign out, and check a wrong password is explained. Without
-the variables, they're skipped. They find controls by their test tags (such
+launch the app pointed at the test server (with the intent extras
+`PQ_SERVER_URL`, `PQ_SIGNED_OUT` and `PQ_UI_TESTING`, which only debug builds
+read), and go through whole journeys: signing in and out, a session kept
+between launches, a wrong password, a quest appearing on the home screen as
+the administrator starts it, sending the verification email again, and
+staff being pointed to the website. They set up players and quests through
+the generated client. Without the variables, they're skipped. They find controls by their test tags (such
 as `sign-in.user-name`), so those stay put when wording changes.
 
 ## Continuous integration

@@ -1,7 +1,7 @@
 package com.thepuzzlequest.puzzlequest.core
 
-import com.thepuzzlequest.puzzlequest.api.infrastructure.Serializer
 import com.thepuzzlequest.puzzlequest.api.models.Clock
+import com.thepuzzlequest.puzzlequest.api.models.CreateUserRequest
 import com.thepuzzlequest.puzzlequest.api.models.QuestStatus
 import com.thepuzzlequest.puzzlequest.api.models.User
 import org.junit.Assert.assertEquals
@@ -14,7 +14,7 @@ import java.time.Instant
  * the generated client must read responses with things it doesn't know.
  */
 class ToleranceTest {
-    private val json = Serializer.kotlinxSerializationJson
+    private val json = ApiJson.json
 
     @Test
     fun `a field the app doesn't know is ignored, and an unknown role is Other`() {
@@ -23,7 +23,7 @@ class ToleranceTest {
                 """{"id":"u1","userName":"alice","displayName":"Alice A.","email":"a@example.com",""" +
                     """"emailVerified":true,"phone":"","sms":false,"role":"superuser","favouriteColour":"teal"}""",
             )
-        assertEquals(SignedInUser("alice", "Alice A.", Role.Other), SignedInUser(user))
+        assertEquals(SignedInUser("alice", "Alice A.", Role.Other, emailVerified = true), SignedInUser(user))
     }
 
     @Test
@@ -51,5 +51,12 @@ class ToleranceTest {
         assertNull(clock.endTime)
         assertEquals(Instant.parse("2026-11-10T12:00:00Z"), clock.clockStart?.toInstant())
         assertEquals(2_500_000_000L, clock.elapsedMs)
+    }
+
+    @Test
+    fun `a request leaves out the optional fields it doesn't set, rather than sending null`() {
+        val sent = json.encodeToString(CreateUserRequest(userName = "a", email = "a@example.com", password = "p"))
+        assertEquals(false, sent.contains("null"))
+        assertEquals(false, sent.contains("phone"))
     }
 }

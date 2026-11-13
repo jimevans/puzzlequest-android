@@ -36,6 +36,10 @@ class AppViewModel(
         viewModelScope.launch { signIn.signIn(userName, password) }
     }
 
+    fun refreshUser() {
+        viewModelScope.launch { session.refreshUser() }
+    }
+
     fun signOut() {
         viewModelScope.launch { session.signOut() }
     }

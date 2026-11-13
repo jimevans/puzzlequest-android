@@ -23,23 +23,44 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.R
+import com.thepuzzlequest.puzzlequest.core.HomeScreen
 import com.thepuzzlequest.puzzlequest.core.SessionStore
 
 /**
  * Shows sign-in or the signed-in app, once the session kept from before has
- * been checked.
+ * been checked: a player's quests, or for staff and administrators, a note
+ * that their tools are on the website.
+ *
+ * @param uiTesting whether to show the UI tests what they wait on.
  */
 @Composable
-fun RootScreen(app: AppViewModel) {
+fun RootScreen(
+    app: AppViewModel,
+    uiTesting: Boolean = false,
+) {
     // collectAsStateWithLifecycle turns the session's StateFlow into Compose
     // state: this screen is redrawn whenever it changes, while it's on screen.
     val state by app.session.state.collectAsStateWithLifecycle()
     Surface(modifier = Modifier.fillMaxSize()) {
         when (val current = state) {
-            SessionStore.State.Restoring -> Restoring()
-            SessionStore.State.SignedOut -> SignInScreen(app)
-            is SessionStore.State.SignedIn -> SignedInScreen(current.user, onSignOut = app::signOut)
-            SessionStore.State.RestoreFailed -> RestoreFailed(onRetry = app::restore, onSignOut = app::signOut)
+            SessionStore.State.Restoring -> {
+                Restoring()
+            }
+
+            SessionStore.State.SignedOut -> {
+                SignInScreen(app)
+            }
+
+            is SessionStore.State.SignedIn -> {
+                when (current.user.homeScreen) {
+                    HomeScreen.QUESTS -> HomeScreen(app, current.user, uiTesting)
+                    HomeScreen.WEBSITE -> WebsiteNoteScreen(app, current.user)
+                }
+            }
+
+            SessionStore.State.RestoreFailed -> {
+                RestoreFailed(onRetry = app::restore, onSignOut = app::signOut)
+            }
         }
     }
 }

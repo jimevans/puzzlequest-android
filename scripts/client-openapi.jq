@@ -14,6 +14,13 @@
 #   keeps only JSON. The generator writes one method per operation and can't
 #   name the second body's type; the app always sends JSON, decoding QR codes
 #   on the phone.
+# - Each alternative of a live-update message (LiveUpdate, oneOf) and of a
+#   subscription (LiveUpdateSubscription, anyOf) is given a title, which the
+#   generator names its class by: LiveUpdatePuzzleSolved,
+#   LiveUpdateQuestSubscription and so on, rather than numbers that would
+#   shift as messages are added. (The generator's class for LiveUpdate itself
+#   merges every alternative into one that can't read any of them, so
+#   core/LiveUpdates.kt reads `message` and decodes the alternative it names.)
 
 def json_only:
   if type == "object" and (.content | type) == "object"
@@ -23,3 +30,9 @@ def json_only:
 
 .paths |= map_values(map_values(
   if type == "object" and has("requestBody") then .requestBody |= json_only else . end))
+| .components.schemas.LiveUpdate.oneOf |= map(
+    (.properties.message | .const // .enum[0]) as $message
+    | .title = "LiveUpdate" + ($message | .[0:1] | ascii_upcase) + ($message | .[1:]))
+| .components.schemas.LiveUpdateSubscription.anyOf |= map(
+    .title = "LiveUpdate"
+      + (if .properties | has("questName") then "Quest" else "User" end) + "Subscription")

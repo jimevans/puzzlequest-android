@@ -20,7 +20,31 @@
     <string name="sign_in_unreachable">Can\'t reach PuzzleQuest. Check your internet connection, then try again.</string>
     <string name="sign_in_unexpected">Something went wrong at PuzzleQuest. Try again in a moment.</string>
 
-    <!-- Signed in (a placeholder until the home screen) -->
+    <string name="sign_up_on_website">New to PuzzleQuest? Sign up on the website</string>
+
+    <!-- The player's quests -->
+    <string name="your_quests">Your quests</string>
+    <string name="account">Account</string>
     <string name="signed_in_as">Signed in as %1$s</string>
     <string name="sign_out">Sign out</string>
+    <string name="no_quests">You have no quests yet.</string>
+    <string name="loading_quests">Loading your quests…</string>
+    <string name="quests_load_failed">Couldn\'t load your quests. Check your connection and try again.</string>
+    <string name="quests_updated">Your quests were updated</string>
+    <string name="paused">Paused</string>
+    <!-- How TalkBack reads a quest's time, such as "Time: 1 hour, 4 minutes, 5 seconds" -->
+    <string name="quest_time">Time: %1$s</string>
+    <string name="back">Back</string>
+    <string name="coming_soon">Coming soon</string>
+
+    <!-- Verifying an email address -->
+    <string name="verify_email">Please verify your email address: follow the link in the email we sent you.</string>
+    <string name="send_email_again">Send the email again</string>
+    <string name="email_sent">Sent. Check your inbox.</string>
+    <string name="email_too_many">The email has been sent several times lately. Wait a few minutes, then try again.</string>
+
+    <!-- Staff and administrators -->
+    <string name="website_title">Your tools are on the website</string>
+    <string name="website_note">Signed in as %1$s. This app is for players; staff and administrators use PuzzleQuest on the website.</string>
+    <string name="open_website">Open %1$s</string>
 </resources>
