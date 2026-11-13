@@ -1,6 +1,7 @@
 package com.thepuzzlequest.puzzlequest.core
 
 import com.thepuzzlequest.puzzlequest.api.models.EntrantKind
+import com.thepuzzlequest.puzzlequest.api.models.EntryChallenge
 import com.thepuzzlequest.puzzlequest.api.models.Progress
 import com.thepuzzlequest.puzzlequest.api.models.PuzzleClock
 import com.thepuzzlequest.puzzlequest.api.models.Quest
@@ -37,7 +38,16 @@ data class QuestEntryProgress(
     val clock: QuestClock,
     /** The stops reached, in the order they were reached. */
     val stops: List<Stop>,
+    /** The team's or player's display name; null if it has been deleted. */
+    val entrantName: String? = null,
+    /** What the puzzle master has sent the entry's players, oldest first. */
+    val messages: List<PuzzleMasterMessage> = emptyList(),
+    /** The challenge the puzzle master last sent, answered or not. */
+    val challenge: Challenge? = null,
 ) {
+    /** The challenge waiting for the players to answer it, if any. */
+    val waitingChallenge: Challenge? get() = challenge?.takeIf { it.answer == null }
+
     val isFinished: Boolean get() = status == QuestStatus.COMPLETED
 
     /** The stop being played: reached, and not yet solved or skipped. */
@@ -46,6 +56,45 @@ data class QuestEntryProgress(
     /** The stops solved (or skipped), the latest first. */
     val finishedStops: List<Stop> get() = stops.filter { it.status == StopStatus.COMPLETED }.reversed()
 }
+
+/** A message the puzzle master sent the entry's players. */
+data class PuzzleMasterMessage(
+    val text: String,
+    val sentAt: Instant,
+    /** True if it set a challenge for the players to answer. */
+    val isChallenge: Boolean = false,
+) {
+    /** Messages have no ID of their own; none is sent twice at one moment. */
+    val id: String get() = "${sentAt.toEpochMilli()} $text"
+}
+
+/**
+ * A challenge from the puzzle master: a small puzzle the players answer, in
+ * the app or by text. A right answer shows the confirmation, which they show
+ * the venue's staff to be given what comes next.
+ */
+data class Challenge(
+    val challengeId: String,
+    val message: String,
+    val sentAt: Instant,
+    /** The right answer, once a player has given it; null while it waits. */
+    val answer: ChallengeAnswer? = null,
+) {
+    /** Tells this sending apart from another of the same kept challenge, which the puzzle master may send again. */
+    val id: String get() = "$challengeId ${sentAt.toEpochMilli()}"
+
+    /** Whether a message is the one that set this challenge. */
+    fun isSetBy(message: PuzzleMasterMessage): Boolean = message.isChallenge && message.sentAt == sentAt
+}
+
+/** How a challenge was answered. */
+data class ChallengeAnswer(
+    val answeredAt: Instant,
+    /** What to show the venue's staff. */
+    val confirmation: String,
+    /** True if a player answered by text message, not in the app. */
+    val byText: Boolean = false,
+)
 
 /** A stop the entry has reached: its puzzle, and how it went. */
 data class Stop(
@@ -146,6 +195,15 @@ sealed interface QuestChange {
         val winners: List<Standing>,
     ) : QuestChange
 
+    /** The puzzle master sent a message, or a challenge. */
+    data class MessageReceived(
+        val text: String,
+        val isChallenge: Boolean,
+    ) : QuestChange
+
+    /** A player answered the challenge rightly. */
+    data object ChallengeAnswered : QuestChange
+
     companion object {
         /** What changed between two views of a quest, in the order a player would read them. */
         fun between(
@@ -163,6 +221,17 @@ sealed interface QuestChange {
                     }
                 }
                 if (after.entry.isFinished && !before.entry.isFinished) add(Finished)
+                val known =
+                    before.entry.messages
+                        .map { it.id }
+                        .toSet()
+                after.entry.messages
+                    .filter { it.id !in known }
+                    .forEach { add(MessageReceived(it.text, it.isChallenge)) }
+                // The same challenge, waiting before and answered now.
+                val waiting = before.entry.waitingChallenge
+                val answered = after.entry.challenge
+                if (waiting != null && answered?.answer != null && answered.id == waiting.id) add(ChallengeAnswered)
             }
 
         /**
@@ -220,8 +289,27 @@ internal fun QuestEntryProgress(entry: QuestEntry): QuestEntryProgress {
                     clock = clocks[puzzle.puzzleName],
                 )
             },
+        entrantName = entry.entrant.displayName,
+        messages = entry.messages.map { PuzzleMasterMessage(it.text, it.sentAt.toInstant(), it.challenge) },
+        challenge = entry.challenge?.let(::Challenge),
     )
 }
+
+internal fun Challenge(challenge: EntryChallenge): Challenge =
+    Challenge(
+        challengeId = challenge.challengeId,
+        message = challenge.message,
+        sentAt = challenge.sentAt.toInstant(),
+        answer =
+            challenge.answeredAt?.let { answeredAt ->
+                ChallengeAnswer(
+                    answeredAt = answeredAt.toInstant(),
+                    // Players are shown it once it's answered.
+                    confirmation = challenge.confirmation.orEmpty(),
+                    byText = challenge.answeredVia == EntryChallenge.AnsweredVia.sms,
+                )
+            },
+    )
 
 internal fun Standings(quest: SpectatorQuest): Standings =
     Standings(

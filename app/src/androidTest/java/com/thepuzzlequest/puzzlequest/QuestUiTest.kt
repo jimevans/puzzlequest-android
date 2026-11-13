@@ -8,7 +8,9 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextReplacement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
@@ -116,6 +118,61 @@ class QuestUiTest {
             compose.waitFor("quest.not-available", 15_000)
             compose.onNode(hasText("Back to your quests")).performClick()
             compose.waitFor("home.list", 15_000)
+        }
+    }
+
+    @Test
+    fun aChallengeArrivesAsItIsSentAndARightAnswerShowsTheConfirmation() {
+        val player = TestServer.newPlayer()
+        val admin = TestServer.adminToken()
+        val (questName, _) = TestServer.makeQuest(player, admin)
+        TestServer.start(questName, admin)
+
+        launchApp().use {
+            openQuest(questName, player)
+            TestServer.sendChallenge(questName, player, "What lights the harbour?", admin)
+            // It pops up over the quest screen, to answer there.
+            compose.waitFor("quest.challenge.message", 15_000)
+            compose.onNodeWithTag("quest.challenge.message").assertTextEquals("What lights the harbour?")
+
+            compose.onNodeWithTag("quest.challenge.answer").performScrollTo().performTextReplacement("an organ")
+            compose.onNodeWithTag("quest.challenge.answer.send").performScrollTo().performClick()
+            compose.waitFor("quest.challenge.error", 15_000)
+            compose.onNodeWithTag("quest.challenge.error").assertTextContains("not the answer", substring = true)
+
+            // Keywords, as puzzle answers: other words around it are fine.
+            compose
+                .onNodeWithTag(
+                    "quest.challenge.answer",
+                ).performScrollTo()
+                .performTextReplacement("It's the Lighthouse!")
+            compose.onNodeWithTag("quest.challenge.answer.send").performScrollTo().performClick()
+            compose.waitForInside("quest.challenge.confirmation", 15_000)
+            compose
+                .onNodeWithTag("quest.challenge.confirmation", useUnmergedTree = true)
+                .assertTextEquals("Show this to the bartender")
+            compose.onNodeWithTag("quest.challenge.answered").assertTextContains("Show this to the staff")
+            compose.onNodeWithTag("quest.challenge.answer").assertDoesNotExist()
+
+            // Put away, a row brings the confirmation back for the staff.
+            compose.onNodeWithTag("quest.messages.done").performClick()
+            compose.waitUntilDoesNotExist(hasTestTag("quest.challenge.answered"), 15_000)
+            compose.waitFor("quest.challenge-row", 15_000)
+            compose.onNodeWithTag("quest.challenge-row").assertTextContains("Challenge answered")
+            compose.onNodeWithTag("quest.challenge-row").performClick()
+            compose.waitForInside("quest.challenge.confirmation", 15_000)
+            compose.onNodeWithTag("quest.messages.done").performClick()
+            compose.waitUntilDoesNotExist(hasTestTag("quest.challenge.answered"), 15_000)
+
+            // Hidden, the row is gone for good.
+            compose.onNodeWithTag("quest.challenge-row.hide").performClick()
+            compose.waitUntilDoesNotExist(hasTestTag("quest.challenge-row"), 15_000)
+
+            // The challenge is in the history, and opens to its confirmation.
+            compose.onNodeWithTag("quest.messages-row").performClick()
+            compose.waitFor("quest.messages", 15_000)
+            compose.onNode(hasText("What lights the harbour?", substring = true)).performClick()
+            compose.waitForInside("quest.challenge.confirmation", 15_000)
         }
     }
 

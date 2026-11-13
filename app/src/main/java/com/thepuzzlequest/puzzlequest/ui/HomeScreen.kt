@@ -33,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -54,12 +55,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.HomeViewModel
+import com.thepuzzlequest.puzzlequest.PreferencesMessagesSeen
 import com.thepuzzlequest.puzzlequest.PuzzleViewModel
 import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
 import com.thepuzzlequest.puzzlequest.core.SignedInUser
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import java.time.Instant
 
 /** The list of quests, the home screen's first page. */
 @Serializable
@@ -78,6 +81,19 @@ data class PuzzleRoute(
     val questName: String,
     val puzzleName: String,
     val displayName: String,
+)
+
+/** Everything the puzzle master has sent, opened from the quest. */
+@Serializable
+data class MessagesRoute(
+    val questName: String,
+)
+
+/** One of the puzzle master's challenges, by when it was sent (milliseconds since 1970), opened from the messages. */
+@Serializable
+data class ChallengeRoute(
+    val questName: String,
+    val sentAt: Long,
 )
 
 /** A solved stop's details, opened from its quest. */
@@ -110,7 +126,9 @@ fun HomeScreen(
             val route = entry.toRoute<QuestRoute>()
             // Inside a destination, viewModel() gives the screen one of its
             // own, kept until the player goes back from it.
-            val quest = viewModel { QuestViewModel(route.questName, server.session.api) }
+            val context = LocalContext.current.applicationContext
+            val quest =
+                viewModel { QuestViewModel(route.questName, server.session.api, PreferencesMessagesSeen(context)) }
             QuestScreen(
                 route,
                 quest,
@@ -118,6 +136,26 @@ fun HomeScreen(
                 onBack = { navigation.popBackStack() },
                 onOpenStop = { navigation.navigate(it) },
                 onOpenPuzzle = { navigation.navigate(it) },
+                onOpenMessages = { navigation.navigate(it) },
+            )
+        }
+        // The messages and a challenge use the quest's own ViewModel, from
+        // its place in the back stack beneath them, so they follow its
+        // updates.
+        composable<MessagesRoute> { entry ->
+            val questEntry = remember(entry) { navigation.getBackStackEntry<QuestRoute>() }
+            MessagesHistoryScreen(
+                viewModel<QuestViewModel>(questEntry),
+                onOpenChallenge = { navigation.navigate(it) },
+                onBack = { navigation.popBackStack() },
+            )
+        }
+        composable<ChallengeRoute> { entry ->
+            val questEntry = remember(entry) { navigation.getBackStackEntry<QuestRoute>() }
+            ChallengeDetailScreen(
+                viewModel<QuestViewModel>(questEntry),
+                Instant.ofEpochMilli(entry.toRoute<ChallengeRoute>().sentAt),
+                onBack = { navigation.popBackStack() },
             )
         }
         composable<PuzzleRoute> { entry ->

@@ -56,6 +56,8 @@ fun playerQuestJson(
     clocks: List<String> = emptyList(),
     kind: String = "player",
     entryId: String = "e1",
+    messages: List<String> = emptyList(),
+    challenge: String = "null",
 ): String {
     val running = !paused && status != "completed"
     val clockStart = if (running) "\"2026-11-11T16:00:00.000Z\"" else "null"
@@ -63,7 +65,9 @@ fun playerQuestJson(
     return """{"questName":"harbor","displayName":"Harbor walk","entries":[{"id":"$entryId",""" +
         """"entrant":{"kind":"$kind","name":"pat","displayName":"Pat"},""" +
         """"status":"$status","statusDescription":"$description","paused":$paused,""" +
-        """"messages":[],"challenge":null,"puzzles":[${stops.joinToString(",")}],""" +
+        """"messages":[${messages.joinToString(
+            ",",
+        )}],"challenge":$challenge,"puzzles":[${stops.joinToString(",")}],""" +
         """"progress":{"startTime":"2026-11-11T16:00:00.000Z","endTime":null,"running":$running,""" +
         """"clockStart":$clockStart,"elapsedMs":600000,"penaltyMs":60000,"totalMs":660000,""" +
         """"puzzles":[${clocks.joinToString(",")}]}}]}"""

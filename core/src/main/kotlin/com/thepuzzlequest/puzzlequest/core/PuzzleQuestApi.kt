@@ -11,6 +11,7 @@ import com.thepuzzlequest.puzzlequest.api.infrastructure.ClientException
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerError
 import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerException
 import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
+import com.thepuzzlequest.puzzlequest.api.models.AnswerChallengeRequest
 import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
 import com.thepuzzlequest.puzzlequest.api.models.RevealHintRequest
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
@@ -190,6 +191,19 @@ class PuzzleQuestApi(
         connectionId: String?,
     ) {
         call { playing.revealHint(questName, puzzleName, RevealHintRequest(connectionId)) }
+    }
+
+    /**
+     * Answers the challenge the player's entry is waiting for.
+     *
+     * @return the confirmation to show the venue's staff.
+     */
+    suspend fun answerChallenge(
+        questName: String,
+        answer: String,
+    ): ChallengeAnswer {
+        val answered = call { playing.answerChallenge(questName, AnswerChallengeRequest(answer)) }
+        return ChallengeAnswer(answered.answeredAt.toInstant(), answered.confirmation)
     }
 
     /** Sends the user another email with the link that verifies their address. */
