@@ -12,7 +12,10 @@ app, [puzzlequest-ios](https://github.com/jimevans/puzzlequest-ios), which
 this app follows screen for screen.
 
 So far players can sign in and out (the session is kept between launches),
-and see their quests, kept up to date live as they start, pause and change.
+see their quests, kept up to date live as they start, pause and change, and
+open one: the stop they're on first, then the stops they've solved, each with
+its times and solution, and once they finish, the end of the line and, in a
+race, the standings. It never says how many stops a quest has.
 Staff and administrators are pointed to the website, where their tools are.
 Options, from the sign-in screen or the account menu, chooses which
 PuzzleQuest server the app uses (below).
@@ -115,7 +118,8 @@ allowlist (see `ServerAddressPolicy.admit`).
     (who is signed in, and its token), `ServerConnection` (the chosen server
     and its session), `LiveUpdateFollower` (following the
     API's live updates over its websocket, reconnecting after a drop), and
-    models such as `SignInModel`, `HomeModel` and `OptionsModel`, which publish their state
+    models such as `SignInModel`, `HomeModel`, `QuestModel` and
+    `OptionsModel`, which publish their state
     as Kotlin flows.
   - `src/test`: unit tests. `src/contractTest`: tests against a real server.
 - `api/`: the pinned API release: its description (`openapi.json`), its
@@ -209,7 +213,9 @@ warning; `app/lint.xml` lists what's set aside, and why.
 
 These run on the computer: reading newer responses, explaining errors,
 restoring and ending sessions, the home screen's list and clocks,
-following live updates, which server addresses each build allows, checking
+following live updates, reading a player's quest and its standings, what's
+announced to TalkBack as a quest changes, the quest screen's model, which
+server addresses each build allows, checking
 a server is PuzzleQuest's, keeping each server's token apart, switching
 servers, and the Options screen's model, against a fake server
 ([MockWebServer](https://github.com/square/okhttp/tree/master/mockwebserver))
@@ -247,6 +253,8 @@ sends for a wrong password, an invalid request, and too many attempts; make
 quests for new players as the administrator and check they're listed once
 started, and heard of through live updates over the real websocket; and send
 the verification email again, all through the generated client; and check
+fetch a quest before and after it starts, solve its stop, race two players to
+the standings, reset a quest, and follow a quest's live updates; check
 that the check before switching servers accepts a real server, and finds
 nothing where nothing listens. Without
 `PQ_TEST_SERVER_URL` they're skipped.
@@ -268,7 +276,11 @@ the intent extras `PQ_SIGNED_OUT`, `PQ_SERVER_URL` and `PQ_UI_TESTING`, which
 only debug builds read), and go through whole journeys: signing in and out, a session kept
 between launches, a wrong password, a quest appearing on the home screen as
 the administrator starts it, sending the verification email again, and
-staff being pointed to the website. Without `PQ_SERVER_URL` (and with
+staff being pointed to the website. On a quest's screen, they see the current
+stop, a pause and a resume, finishing a race (the finish, the standings with
+the player's own entry marked, and a solved stop's solution), and a reset,
+each happening through the API while the screen is open, so it can only show
+through live updates. Without `PQ_SERVER_URL` (and with
 `PQ_RESET_SERVER`, so Options is as a new install has it), they check
 Options starts with Production, choose the test server as a custom one and
 sign in to it (the sign-in screen naming it), and switch back to Production

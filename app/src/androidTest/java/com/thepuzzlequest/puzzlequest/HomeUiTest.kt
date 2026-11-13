@@ -51,8 +51,8 @@ class HomeUiTest {
             compose.onNodeWithTag("home.empty").assertDoesNotExist()
 
             row.performClick()
-            compose.waitFor("quest.placeholder", 10_000)
-            compose.onNodeWithTag("quest.placeholder").assertTextEquals("Coming soon")
+            // It opens to the quest's own screen.
+            compose.waitFor("quest.current-stop", 30_000)
             compose.onNodeWithTag("quest.title").assertTextEquals(displayName)
             compose.onNodeWithTag("quest.back").performClick()
 

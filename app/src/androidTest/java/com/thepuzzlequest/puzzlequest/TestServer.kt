@@ -1,20 +1,26 @@
 package com.thepuzzlequest.puzzlequest
 
 import android.content.Intent
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
+import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.PuzzlesApi
 import com.thepuzzlequest.puzzlequest.api.apis.QuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.RunningQuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.SessionsApi
 import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
+import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
+import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestEntrantsInner
@@ -22,6 +28,7 @@ import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestPuzzlesInner
 import com.thepuzzlequest.puzzlequest.api.models.CreateUserRequest
 import com.thepuzzlequest.puzzlequest.api.models.EntrantKind
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
+import com.thepuzzlequest.puzzlequest.api.models.StopStatus
 import com.thepuzzlequest.puzzlequest.core.ApiJson
 import com.thepuzzlequest.puzzlequest.core.PuzzleQuestApi
 import org.junit.Assume.assumeTrue
@@ -89,6 +96,16 @@ object TestServer {
     fun makeQuest(
         player: String,
         admin: String,
+    ): Pair<String, String> = makeQuest(listOf(player), admin)
+
+    /**
+     * As the administrator, makes a quest of one stop, each player playing it
+     * on their own (a race, for more than one), and returns its name and
+     * display name. It isn't started.
+     */
+    fun makeQuest(
+        players: List<String>,
+        admin: String,
     ): Pair<String, String> {
         val puzzleName = unique("puzzle")
         PuzzlesApi(baseUrl, http).apply { accessTokenProvider = { admin } }.createPuzzle(
@@ -100,7 +117,7 @@ object TestServer {
             CreateQuestRequest(
                 questName,
                 displayName,
-                listOf(CreateQuestRequestEntrantsInner(EntrantKind.player, player)),
+                players.map { CreateQuestRequestEntrantsInner(EntrantKind.player, it) },
                 puzzles = listOf(CreateQuestRequestPuzzlesInner(puzzleName)),
             ),
         )
@@ -112,7 +129,66 @@ object TestServer {
         questName: String,
         admin: String,
     ) {
-        RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { admin } }.startQuest(questName)
+        running(admin).startQuest(questName)
+    }
+
+    fun pause(
+        questName: String,
+        admin: String,
+    ) {
+        running(admin).pauseQuest(questName)
+    }
+
+    fun resume(
+        questName: String,
+        admin: String,
+    ) {
+        running(admin).resumeQuest(questName)
+    }
+
+    fun reset(
+        questName: String,
+        admin: String,
+    ) {
+        running(admin).resetQuest(questName)
+    }
+
+    private fun running(admin: String) = RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { admin } }
+
+    /** Signs in as a player made by [newPlayer]. */
+    fun token(player: String): String =
+        SessionsApi(baseUrl, http)
+            .signIn(SignInRequest(player, password, SignInRequest.Client.native))
+            .token!!
+
+    /**
+     * As the player, finds the quest's current stop (with the code the
+     * administrator sees) and solves it.
+     */
+    fun solveCurrentStop(
+        questName: String,
+        playerToken: String,
+        admin: String,
+    ) {
+        val stop =
+            QuestsApi(baseUrl, http)
+                .apply { accessTokenProvider = { playerToken } }
+                .getQuest(questName)
+                .propertyEntries
+                .single()
+                .puzzles
+                .last { it.status != StopStatus.completed }
+        val code =
+            QuestsApi(baseUrl, http)
+                .apply { accessTokenProvider = { admin } }
+                .getQuest(questName)
+                .propertyEntries
+                .flatMap { it.puzzles }
+                .first { it.puzzleName == stop.puzzleName }
+                .activationCode
+        val playing = PlayingApi(baseUrl, http).apply { accessTokenProvider = { playerToken } }
+        playing.activatePuzzle(questName, stop.puzzleName, ActivatePuzzleRequest(activationCode = code))
+        playing.attemptSolution(questName, stop.puzzleName, AttemptSolutionRequest("piano"))
     }
 }
 
@@ -147,6 +223,16 @@ fun ComposeTestRule.waitFor(
     tag: String,
     timeoutMillis: Long = 30_000,
 ) = waitUntilExactlyOneExists(hasTestTag(tag), timeoutMillis)
+
+/** Waits until a screen's live updates are connected (its marker, shown with PQ_UI_TESTING, says so). */
+fun ComposeTestRule.waitForLiveUpdates(tag: String) =
+    waitUntil(30_000) {
+        onAllNodesWithTag(tag)
+            .fetchSemanticsNodes()
+            .singleOrNull()
+            ?.config
+            ?.getOrNull(SemanticsProperties.StateDescription) == "connected"
+    }
 
 fun ComposeTestRule.signIn(
     userName: String,

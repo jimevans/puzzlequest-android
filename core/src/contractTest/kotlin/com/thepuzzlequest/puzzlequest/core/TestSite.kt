@@ -1,9 +1,12 @@
 package com.thepuzzlequest.puzzlequest.core
 
+import com.thepuzzlequest.puzzlequest.api.apis.PlayingApi
 import com.thepuzzlequest.puzzlequest.api.apis.PuzzlesApi
 import com.thepuzzlequest.puzzlequest.api.apis.QuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.RunningQuestsApi
 import com.thepuzzlequest.puzzlequest.api.apis.UsersApi
+import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
+import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequest
 import com.thepuzzlequest.puzzlequest.api.models.CreateQuestRequestEntrantsInner
@@ -50,8 +53,15 @@ object TestSite {
         return api
     }
 
+    /** A player signed in: their user name, the API as them, and their token. */
+    data class Player(
+        val userName: String,
+        val api: PuzzleQuestApi,
+        val token: String,
+    )
+
     /** Signs up a new player, and signs in as them. */
-    suspend fun newPlayer(): Pair<String, PuzzleQuestApi> {
+    suspend fun newPlayer(): Player {
         val userName = unique("player")
         UsersApi(baseUrl, http).createUser(
             CreateUserRequest(
@@ -61,7 +71,10 @@ object TestSite {
                 displayName = "Player $userName",
             ),
         )
-        return userName to signedIn(userName, password)
+        val tokens = InMemoryTokenStore()
+        val api = api(tokens)
+        tokens.save(api.signIn(userName, password).first)
+        return Player(userName, api, tokens.read()!!)
     }
 
     /** The administrator's token, for the setup calls below. */
@@ -70,6 +83,15 @@ object TestSite {
     /** Makes a quest of one stop for a player to play on their own, without starting it. */
     fun makeQuest(
         player: String,
+        adminToken: String,
+    ): String = makeQuest(listOf(player), adminToken)
+
+    /**
+     * Makes a quest of one stop, each player playing it on their own (a race,
+     * for more than one), without starting it.
+     */
+    fun makeQuest(
+        players: List<String>,
         adminToken: String,
     ): String {
         val puzzleName = unique("puzzle")
@@ -87,7 +109,7 @@ object TestSite {
             CreateQuestRequest(
                 questName = questName,
                 displayName = "Quest $questName",
-                entrants = listOf(CreateQuestRequestEntrantsInner(EntrantKind.player, player)),
+                entrants = players.map { CreateQuestRequestEntrantsInner(EntrantKind.player, it) },
                 puzzles = listOf(CreateQuestRequestPuzzlesInner(puzzleName)),
             ),
         )
@@ -99,5 +121,41 @@ object TestSite {
         adminToken: String,
     ) {
         RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }.startQuest(questName)
+    }
+
+    fun reset(
+        questName: String,
+        adminToken: String,
+    ) {
+        RunningQuestsApi(baseUrl, http).apply { accessTokenProvider = { adminToken } }.resetQuest(questName)
+    }
+
+    /**
+     * As the player, finds the quest's current stop (with the code the
+     * administrator sees) and solves it.
+     */
+    suspend fun solveCurrentStop(
+        questName: String,
+        player: Player,
+        adminToken: String,
+    ) {
+        val stop =
+            checkNotNull(
+                player.api
+                    .playerQuest(questName)
+                    ?.entry
+                    ?.currentStop,
+            ) { "no current stop" }
+        val code =
+            QuestsApi(baseUrl, http)
+                .apply { accessTokenProvider = { adminToken } }
+                .getQuest(questName)
+                .propertyEntries
+                .flatMap { it.puzzles }
+                .first { it.puzzleName == stop.puzzleName }
+                .activationCode
+        val playing = PlayingApi(baseUrl, http).apply { accessTokenProvider = { player.token } }
+        playing.activatePuzzle(questName, stop.puzzleName, ActivatePuzzleRequest(activationCode = code))
+        playing.attemptSolution(questName, stop.puzzleName, AttemptSolutionRequest("piano"))
     }
 }
