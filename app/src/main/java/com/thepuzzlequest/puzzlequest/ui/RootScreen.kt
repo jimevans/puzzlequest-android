@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,7 +30,8 @@ import com.thepuzzlequest.puzzlequest.core.SessionStore
 /**
  * Shows sign-in or the signed-in app, once the session kept from before has
  * been checked: a player's quests, or for staff and administrators, a note
- * that their tools are on the website.
+ * that their tools are on the website. Options, opened from any of them,
+ * shows over them.
  *
  * @param uiTesting whether to show the UI tests what they wait on.
  */
@@ -38,30 +40,48 @@ fun RootScreen(
     app: AppViewModel,
     uiTesting: Boolean = false,
 ) {
-    // collectAsStateWithLifecycle turns the session's StateFlow into Compose
-    // state: this screen is redrawn whenever it changes, while it's on screen.
-    val state by app.session.state.collectAsStateWithLifecycle()
+    // collectAsStateWithLifecycle turns a StateFlow into Compose state: this
+    // screen is redrawn whenever it changes, while it's on screen.
+    val server by app.server.collectAsStateWithLifecycle()
+    val options by app.options.collectAsStateWithLifecycle()
     Surface(modifier = Modifier.fillMaxSize()) {
-        when (val current = state) {
-            SessionStore.State.Restoring -> {
-                Restoring()
-            }
+        // A new server brings a new session: `key` makes Compose build every
+        // screen inside afresh for it, dropping the old session's screens and
+        // everything they remembered (like SwiftUI's `.id`).
+        key(server) {
+            val state by server.session.state.collectAsStateWithLifecycle()
+            when (val current = state) {
+                SessionStore.State.Restoring -> {
+                    Restoring()
+                }
 
-            SessionStore.State.SignedOut -> {
-                SignInScreen(app)
-            }
+                SessionStore.State.SignedOut -> {
+                    SignInScreen(app, server.origin)
+                }
 
-            is SessionStore.State.SignedIn -> {
-                when (current.user.homeScreen) {
-                    HomeScreen.QUESTS -> HomeScreen(app, current.user, uiTesting)
-                    HomeScreen.WEBSITE -> WebsiteNoteScreen(app, current.user)
+                is SessionStore.State.SignedIn -> {
+                    when (current.user.homeScreen) {
+                        HomeScreen.QUESTS -> HomeScreen(app, server, current.user, uiTesting)
+                        HomeScreen.WEBSITE -> WebsiteNoteScreen(app, current.user, server.origin)
+                    }
+                }
+
+                SessionStore.State.RestoreFailed -> {
+                    RestoreFailed(onRetry = app::restore, onSignOut = app::signOut)
                 }
             }
-
-            SessionStore.State.RestoreFailed -> {
-                RestoreFailed(onRetry = app::restore, onSignOut = app::signOut)
-            }
         }
+        // TalkBack hears which server is now in use.
+        Announcement(stringResource(R.string.now_using, server.origin.displayName), server.switches)
+    }
+    options?.let { model ->
+        OptionsScreen(
+            model,
+            server.origin,
+            isFixed = app.connection.isFixed,
+            onUseCustomAddress = app::useCustomAddress,
+            onClose = app::closeOptions,
+        )
     }
 }
 

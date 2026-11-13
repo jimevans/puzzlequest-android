@@ -6,6 +6,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -115,15 +116,28 @@ object TestServer {
     }
 }
 
-/** The app, using the test server, starting signed out unless told otherwise. */
-fun launchApp(signedOut: Boolean = true): ActivityScenario<MainActivity> {
+/**
+ * The app, using the test server, starting signed out unless told otherwise.
+ *
+ * @param fixedServer whether to set the server for the run (PQ_SERVER_URL);
+ *   without it, the app uses the server Options says, which starts as a new
+ *   install's (Production).
+ */
+fun launchApp(
+    signedOut: Boolean = true,
+    fixedServer: Boolean = true,
+): ActivityScenario<MainActivity> {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     val intent =
         Intent(context, MainActivity::class.java)
-            .putExtra(ServerAddress.EXTRA_SERVER_URL, TestServer.url)
-            .putExtra(MainActivity.EXTRA_SIGNED_OUT, signedOut)
+            .putExtra(AppServer.EXTRA_SIGNED_OUT, signedOut)
             // Shows the home screen's live-update state to the tests.
             .putExtra(MainActivity.EXTRA_UI_TESTING, true)
+    if (fixedServer) {
+        intent.putExtra(AppServer.EXTRA_SERVER_URL, TestServer.url)
+    } else {
+        intent.putExtra(AppServer.EXTRA_RESET_SERVER, true)
+    }
     return ActivityScenario.launch(intent)
 }
 
@@ -141,7 +155,10 @@ fun ComposeTestRule.signIn(
     waitFor("sign-in.user-name")
     onNodeWithTag("sign-in.user-name").performTextInput(userName)
     onNodeWithTag("sign-in.password").performTextInput(password)
-    onNodeWithTag("sign-in.submit").performClick()
+    // On a small screen, the keyboard covers the button: scroll it into view
+    // above the keyboard first, as a person would, or the tap lands on the
+    // keyboard.
+    onNodeWithTag("sign-in.submit").performScrollTo().performClick()
 }
 
 /** Signs out through the home screen's account menu. */

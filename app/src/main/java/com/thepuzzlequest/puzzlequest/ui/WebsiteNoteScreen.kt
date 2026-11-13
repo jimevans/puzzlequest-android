@@ -1,6 +1,7 @@
 package com.thepuzzlequest.puzzlequest.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,9 +24,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.thepuzzlequest.puzzlequest.AppViewModel
 import com.thepuzzlequest.puzzlequest.R
+import com.thepuzzlequest.puzzlequest.core.ServerOrigin
 import com.thepuzzlequest.puzzlequest.core.SignedInUser
 
 /**
@@ -36,40 +37,46 @@ import com.thepuzzlequest.puzzlequest.core.SignedInUser
 fun WebsiteNoteScreen(
     app: AppViewModel,
     user: SignedInUser,
+    server: ServerOrigin,
 ) {
-    val website = app.api.server
     val uriHandler = LocalUriHandler.current
     var signingOut by rememberSaveable { mutableStateOf(false) }
-    Column(
-        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        BrandMark()
-        Text(
-            stringResource(R.string.website_title),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.semantics { heading() },
-        )
-        Text(
-            stringResource(R.string.website_note, user.displayName),
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.testTag("website.note"),
-        )
-        Button(onClick = { uriHandler.openUri(website) }, modifier = Modifier.testTag("website.open")) {
-            Text(stringResource(R.string.open_website, website.toUri().host ?: website))
-        }
-        TextButton(
-            onClick = {
-                signingOut = true
-                app.signOut()
-            },
-            enabled = !signingOut,
-            modifier = Modifier.testTag("website.sign-out"),
+    Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(R.string.sign_out))
+            BrandMark()
+            Text(
+                stringResource(R.string.website_title),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                stringResource(R.string.website_note, user.displayName),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("website.note"),
+            )
+            Button(onClick = { uriHandler.openUri(server.url) }, modifier = Modifier.testTag("website.open")) {
+                Text(stringResource(R.string.open_website, server.displayName))
+            }
+            TextButton(
+                onClick = {
+                    signingOut = true
+                    app.signOut()
+                },
+                enabled = !signingOut,
+                modifier = Modifier.testTag("website.sign-out"),
+            ) {
+                Text(stringResource(R.string.sign_out))
+            }
         }
+        OptionsButton(
+            onClick = app::openOptions,
+            modifier = Modifier.align(Alignment.TopEnd).testTag("website.options"),
+        )
     }
 }

@@ -47,4 +47,37 @@
     <string name="website_title">Your tools are on the website</string>
     <string name="website_note">Signed in as %1$s. This app is for players; staff and administrators use PuzzleQuest on the website.</string>
     <string name="open_website">Open %1$s</string>
+
+    <!-- Options: choosing the server -->
+    <string name="options">Options</string>
+    <string name="close">Close</string>
+    <string name="server_in_use">Server in use</string>
+    <string name="server">Server</string>
+    <string name="production">Production</string>
+    <string name="this_computer">This computer</string>
+    <string name="custom">Custom</string>
+    <string name="another_server">Another PuzzleQuest server</string>
+    <string name="server_fixed" translatable="false">Set for this run by the PQ_SERVER_URL intent extra.</string>
+    <string name="custom_server">Custom server</string>
+    <string name="server_address">Server address</string>
+    <string name="use_this_server">Use this server</string>
+    <string name="checking_server">Checking the server</string>
+    <string name="server_is_checked">The app checks it\'s a PuzzleQuest server before using it.</string>
+    <string name="only_puzzlequest_servers">This app connects only to PuzzleQuest\'s own servers: thepuzzlequest.com and addresses ending in .thepuzzlequest.com.</string>
+    <string name="server_not_an_address">That isn\'t a server\'s address. Enter one such as https://staging.thepuzzlequest.com.</string>
+    <string name="server_not_a_web_address">A server\'s address starts with https:// (or http:// for a test server).</string>
+    <string name="server_has_user_info">A server\'s address can\'t include a user name or password.</string>
+    <string name="server_not_just_the_server">Enter only the server\'s address, with nothing after its name, such as https://staging.thepuzzlequest.com.</string>
+    <string name="server_not_secure">PuzzleQuest\'s servers use secure connections: the address must start with https://.</string>
+    <string name="server_has_port">PuzzleQuest\'s servers don\'t use a port number. Leave out the colon and the number after the name.</string>
+    <string name="server_unreachable">Can\'t reach that server. Check the address and your internet connection, then try again.</string>
+    <string name="server_not_puzzlequest">That isn\'t a PuzzleQuest server. Check the address, then try again.</string>
+    <string name="server_unsupported_version">That server runs a version of PuzzleQuest this app can\'t use.</string>
+    <string name="switch_servers">Switch servers?</string>
+    <!-- Such as "Switching to localhost:3000 signs you out of thepuzzlequest.com." -->
+    <string name="switch_servers_message">Switching to %1$s signs you out of %2$s.</string>
+    <string name="switch_and_sign_out">Switch and sign out</string>
+    <string name="cancel">Cancel</string>
+    <string name="now_using">Now using %1$s</string>
+    <string name="signing_in_to">Signing in to %1$s</string>
 </resources>
