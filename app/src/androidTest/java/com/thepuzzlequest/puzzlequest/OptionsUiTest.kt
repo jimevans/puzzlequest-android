@@ -55,7 +55,6 @@ class OptionsUiTest {
     fun aCustomServerIsCheckedNamedAndSignedInTo() {
         launchApp(fixedServer = false).use {
             chooseTestServer()
-            compose.waitFor("sign-in.server", 10_000)
             compose.onNodeWithTag("sign-in.server").assertTextContains("Signing in to $serverName")
 
             compose.signIn(TestServer.userName, TestServer.password)
@@ -104,6 +103,10 @@ class OptionsUiTest {
         compose.onNodeWithTag("options.use-custom").performClick()
         // Switching rebuilds the screens for the new server, closing Options.
         compose.waitUntilDoesNotExist(hasTestTag("options.server.custom"), 30_000)
+        // Options can close a frame before the old server's screens are
+        // replaced; only the new server's sign-in screen names it, so wait
+        // for that before typing anything.
+        compose.waitFor("sign-in.server")
     }
 
     /** Opens Options from the home screen's account menu. */
