@@ -3,4 +3,6 @@
      screens take theirs from ui/theme/Color.kt. -->
 <resources>
     <color name="aubergine">#FF2A1638</color>
+    <!-- Notifications' accent. -->
+    <color name="brand_purple">#FF6A2C91</color>
 </resources>

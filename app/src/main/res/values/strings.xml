@@ -155,6 +155,15 @@
     <string name="the_challenge">The challenge</string>
     <string name="another_challenge_since">The puzzle master has sent another challenge since this one.</string>
 
+    <!-- Push notifications -->
+    <!-- The notification channel, as the phone's settings name it -->
+    <string name="notification_channel">Quests</string>
+    <string name="notification_channel_description">When a quest starts, is paused or resumed, when a teammate solves a stop, the puzzle master\'s messages, and how a race ends.</string>
+    <string name="notifications_offer_title">Get told when it matters</string>
+    <string name="notifications_offer_message">Notifications tell you when the quest starts, when the puzzle master pauses it or sends you a challenge, when a teammate solves a stop, and how a race ends, even with the app closed. With them on, the puzzle master\'s messages usually aren\'t texted to you as well.</string>
+    <string name="turn_on">Turn on</string>
+    <string name="not_now">Not now</string>
+
     <!-- What TalkBack says as the quest changes on screen -->
     <string name="announce_paused">Paused by the puzzle master. The clock is stopped.</string>
     <string name="announce_resumed">The quest has resumed.</string>

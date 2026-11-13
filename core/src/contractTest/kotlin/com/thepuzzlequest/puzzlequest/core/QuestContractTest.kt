@@ -202,7 +202,8 @@ class QuestContractTest {
                 }
             assertEquals(409, refused?.statusCode)
 
-            TestSite.registerPhone(player)
+            // As the app registers the phone, once notifications are allowed.
+            player.api.setPushTarget(TestSite.unique("phone"))
             TestSite.sendChallenge(questName, player.userName, admin)
             assertNotNull(
                 player.api

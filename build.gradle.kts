@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.openapi.generator) apply false
     alias(libs.plugins.spotless)
+    alias(libs.plugins.google.services) apply false
 }
 
 // Formatting: `./gradlew spotlessCheck` checks it (as CI does), and

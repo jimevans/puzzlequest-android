@@ -188,6 +188,18 @@ object TestServer {
             .signIn(SignInRequest(player, password, SignInRequest.Client.native))
             .token!!
 
+    /** As the puzzle master, sends the player a message; refused unless they can be reached. */
+    fun sendMessage(
+        questName: String,
+        player: String,
+        message: String,
+        admin: String,
+    ) {
+        RunningQuestsApi(baseUrl, http)
+            .apply { accessTokenProvider = { admin } }
+            .sendPlayerTextMessage(questName, player, SendQuestTextMessageRequest(message))
+    }
+
     /**
      * As the puzzle master, sends the player a challenge whose answer is
      * "lighthouse", and whose confirmation is "Show this to the bartender".
@@ -277,6 +289,10 @@ fun launchApp(
             .putExtra(AppServer.EXTRA_SIGNED_OUT, signedOut)
             // Shows the home screen's live-update state to the tests.
             .putExtra(MainActivity.EXTRA_UI_TESTING, true)
+            // A phone's token for push notifications, in place of
+            // Firebase's, which an emulator on CI can't get; one for each
+            // launch. The test server sends nothing to it.
+            .putExtra(Push.EXTRA_FAKE_TOKEN, TestServer.unique("token"))
     if (fixedServer) {
         intent.putExtra(AppServer.EXTRA_SERVER_URL, TestServer.url)
     } else {

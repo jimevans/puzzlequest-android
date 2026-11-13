@@ -13,6 +13,7 @@ import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerException
 import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.AnswerChallengeRequest
 import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
+import com.thepuzzlequest.puzzlequest.api.models.PushTarget
 import com.thepuzzlequest.puzzlequest.api.models.RevealHintRequest
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
 import kotlinx.coroutines.CoroutineDispatcher
@@ -92,6 +93,20 @@ class PuzzleQuestApi(
 
     /** Who the session's token belongs to. */
     suspend fun currentUser(): SignedInUser = SignedInUser(call { sessions.getCurrentSession() }.user)
+
+    /**
+     * Sends the session's push notifications to this phone, through Firebase,
+     * replacing any phone it had; signing out ends them. Every kind is asked
+     * for.
+     */
+    suspend fun setPushTarget(token: String) {
+        // The environment is Apple's; Android always sends production.
+        call {
+            sessions.setPushTarget(
+                PushTarget(PushTarget.Platform.android, token, PushTarget.Environment.production),
+            )
+        }
+    }
 
     /** Ends the session whose token is sent. */
     suspend fun signOut() {

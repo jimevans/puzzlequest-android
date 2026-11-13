@@ -12,8 +12,5 @@ build/
 local.properties
 captures/
 
-# Firebase's settings, downloaded by hand (see README)
-app/google-services.json
-
 # The API server, checked out at the pinned release for contract and UI tests
 .test-server/

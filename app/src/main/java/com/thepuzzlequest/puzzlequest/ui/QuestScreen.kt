@@ -3,6 +3,7 @@ package com.thepuzzlequest.puzzlequest.ui
 import android.icu.text.ListFormatter
 import android.icu.text.MessageFormat
 import android.icu.text.NumberFormat
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -57,6 +59,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.thepuzzlequest.puzzlequest.Push
 import com.thepuzzlequest.puzzlequest.QuestViewModel
 import com.thepuzzlequest.puzzlequest.R
 import com.thepuzzlequest.puzzlequest.core.Challenge
@@ -97,6 +100,18 @@ fun QuestScreen(
     val state by quest.model.state.collectAsStateWithLifecycle()
     val refreshing by quest.refreshing.collectAsStateWithLifecycle()
 
+    // While it's on screen, its notifications aren't shown: its live updates
+    // show what changed.
+    val permission by Push.registrar.permission.collectAsStateWithLifecycle()
+    val declined by Push.registrar.declined.collectAsStateWithLifecycle()
+    val offersNotifications =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            Push.registrar.offers(route.questName, permission, declined)
+    DisposableEffect(route.questName) {
+        Push.registrar.questOnScreen = route.questName
+        onDispose { if (Push.registrar.questOnScreen == route.questName) Push.registrar.questOnScreen = null }
+    }
+
     // Follows live updates while the app is in the foreground; each return
     // connects again, which fetches the quest, since changes may have been
     // missed.
@@ -122,6 +137,7 @@ fun QuestScreen(
                     PullToRefreshBox(isRefreshing = refreshing, onRefresh = quest::refresh) {
                         QuestProgressList(
                             shown,
+                            offersNotifications,
                             state.standings,
                             state.challengeAtTop,
                             onOpenStop,
@@ -173,6 +189,7 @@ fun QuestScreen(
 @Composable
 private fun QuestProgressList(
     quest: PlayerQuest,
+    offersNotifications: Boolean,
     standings: Standings?,
     challengeAtTop: Challenge?,
     onOpenStop: (StopRoute) -> Unit,
@@ -187,6 +204,10 @@ private fun QuestProgressList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Android 13 and later ask about notifications; earlier ones don't.
+        if (offersNotifications && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            item(key = "notifications") { NotificationsOffer(quest.questName) }
+        }
         // The puzzle master's challenge comes first: the players may be at a
         // venue, with its staff, waiting on it.
         challengeAtTop?.let { challenge ->
