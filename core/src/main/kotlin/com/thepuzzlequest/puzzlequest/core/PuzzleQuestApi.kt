@@ -13,6 +13,8 @@ import com.thepuzzlequest.puzzlequest.api.infrastructure.ServerException
 import com.thepuzzlequest.puzzlequest.api.models.ActivatePuzzleRequest
 import com.thepuzzlequest.puzzlequest.api.models.AnswerChallengeRequest
 import com.thepuzzlequest.puzzlequest.api.models.AttemptSolutionRequest
+import com.thepuzzlequest.puzzlequest.api.models.CreateUserRequest
+import com.thepuzzlequest.puzzlequest.api.models.DeleteUserRequest
 import com.thepuzzlequest.puzzlequest.api.models.PushTarget
 import com.thepuzzlequest.puzzlequest.api.models.RevealHintRequest
 import com.thepuzzlequest.puzzlequest.api.models.SignInRequest
@@ -89,6 +91,33 @@ class PuzzleQuestApi(
             }
         val token = session.token ?: throw ApiError.UnexpectedResponse("signIn: the session has no token")
         return token to SignedInUser(session.user)
+    }
+
+    /**
+     * Makes a new player's account. It doesn't sign in: do that next, with
+     * the same user name and password.
+     */
+    suspend fun signUp(account: NewAccount) {
+        call {
+            users.createUser(
+                CreateUserRequest(
+                    userName = account.userName,
+                    email = account.email,
+                    password = account.password,
+                    displayName = account.displayName,
+                    phone = account.phone,
+                    sms = account.sms,
+                ),
+            )
+        }
+    }
+
+    /** Deletes the signed-in user's own account, confirmed by their password. */
+    suspend fun deleteAccount(
+        userName: String,
+        password: String,
+    ) {
+        call { users.deleteUser(userName, DeleteUserRequest(password = password)) }
     }
 
     /** Who the session's token belongs to. */
@@ -288,6 +317,11 @@ class PuzzleQuestApi(
                 status = details.status ?: plain.status,
                 title = details.title ?: plain.title,
                 detail = details.detail,
+                errors =
+                    details.errors.orEmpty().mapNotNull { error ->
+                        val path = error.path ?: return@mapNotNull null
+                        FieldError(path = path, message = error.message ?: "")
+                    },
             )
         }
 
@@ -317,7 +351,14 @@ class PuzzleQuestApi(
         val status: Int? = null,
         val title: String? = null,
         val detail: String? = null,
-    )
+        val errors: List<Error>? = null,
+    ) {
+        @Serializable
+        data class Error(
+            val path: String? = null,
+            val message: String? = null,
+        )
+    }
 }
 
 /**

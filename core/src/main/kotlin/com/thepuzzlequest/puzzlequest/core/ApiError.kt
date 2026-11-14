@@ -33,6 +33,11 @@ data class Problem(
     val status: Int,
     val title: String,
     val detail: String? = null,
+    /**
+     * What's wrong with each field, when the server says, such as
+     * `body.email`; empty when it doesn't.
+     */
+    val errors: List<FieldError> = emptyList(),
 ) {
     /**
      * The problem types the app acts on. Version 1 may add others, so code
@@ -50,5 +55,15 @@ data class Problem(
         const val WRONG_ACTIVATION_CODE = "/problems/wrong-activation-code"
         const val WRONG_ANSWER = "/problems/wrong-answer"
         const val NO_MORE_HINTS = "/problems/no-more-hints"
+        const val ALREADY_EXISTS = "/problems/already-exists"
+        const val PASSWORD_NOT_ALLOWED = "/problems/password-not-allowed"
+        const val INCORRECT_PASSWORD = "/problems/incorrect-password"
     }
 }
+
+/** What's wrong with one field of a request, in the server's words. */
+data class FieldError(
+    /** Where the field is, such as `body.email`. */
+    val path: String,
+    val message: String,
+)

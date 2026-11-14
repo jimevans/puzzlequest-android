@@ -11,7 +11,10 @@ decision record `docs/decisions/0021-native-apps.md`. Its companion is the iOS
 app, [puzzlequest-ios](https://github.com/jimevans/puzzlequest-ios), which
 this app follows screen for screen.
 
-So far players can sign in and out (the session is kept between launches),
+So far players can sign up (with the same fields and text-message consent as
+the website, and are signed straight in), sign in and out (the session is
+kept between launches), delete their account from the account menu
+(confirming with their password),
 see their quests, kept up to date live as they start, pause and change, and
 open one: the stop they're on first, then the stops they've solved, each with
 its times and solution, and once they finish, the end of the line and, in a
@@ -312,7 +315,10 @@ With the test server's variables loaded:
 ```
 
 They sign in, check the session, sign out, and check the problems the server
-sends for a wrong password, an invalid request, and too many attempts; make
+sends for a wrong password, an invalid request, and too many attempts; sign
+up a new player and be signed in as them, have a user name and an email
+address already in use refused in the server's words, and delete an account
+(a wrong password refused first) so it no longer signs in; make
 quests for new players as the administrator and check they're listed once
 started, and heard of through live updates over the real websocket; and send
 the verification email again, all through the generated client; and check
@@ -341,7 +347,9 @@ phone or emulator connected, set `ANDROID_SERIAL` to choose). The UI tests
 launch the app signed out of every server, pointed at the test server (with
 the intent extras `PQ_SIGNED_OUT`, `PQ_SERVER_URL` and `PQ_UI_TESTING`, which
 only debug builds read), and go through whole journeys: signing in and out, a session kept
-between launches, a wrong password, a quest appearing on the home screen as
+between launches, a wrong password, signing up (with what's missing first
+said at its field) and then deleting the account (a wrong password refused
+first) so it no longer signs in, a quest appearing on the home screen as
 the administrator starts it, sending the verification email again, and
 staff being pointed to the website. On a quest's screen, they see the current
 stop, a pause and a resume, finishing a race (the finish, the standings with

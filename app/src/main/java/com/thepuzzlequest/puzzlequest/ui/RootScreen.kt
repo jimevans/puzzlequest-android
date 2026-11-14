@@ -44,6 +44,8 @@ fun RootScreen(
     // screen is redrawn whenever it changes, while it's on screen.
     val server by app.server.collectAsStateWithLifecycle()
     val options by app.options.collectAsStateWithLifecycle()
+    val signUp by app.signUp.collectAsStateWithLifecycle()
+    val deleteAccount by app.deleteAccount.collectAsStateWithLifecycle()
     Surface(modifier = Modifier.fillMaxSize()) {
         // A new server brings a new session: `key` makes Compose build every
         // screen inside afresh for it, dropping the old session's screens and
@@ -73,6 +75,12 @@ fun RootScreen(
         }
         // TalkBack hears which server is now in use.
         Announcement(stringResource(R.string.now_using, server.origin.displayName), server.switches)
+    }
+    signUp?.let { model ->
+        SignUpScreen(model, server.origin, onSignUp = app::submitSignUp, onClose = app::closeSignUp)
+    }
+    deleteAccount?.let { model ->
+        DeleteAccountDialog(model, onDelete = app::confirmDeleteAccount, onKeep = app::closeDeleteAccount)
     }
     options?.let { model ->
         OptionsScreen(

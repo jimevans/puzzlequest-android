@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -140,13 +139,11 @@ fun SignInScreen(
                         Text(stringResource(R.string.sign_in))
                     }
                 }
-                // Signing up is on the website until the app has it.
-                val uriHandler = LocalUriHandler.current
                 TextButton(
-                    onClick = { uriHandler.openUri(server.url) },
+                    onClick = app::openSignUp,
                     modifier = Modifier.align(Alignment.CenterHorizontally).testTag("sign-in.sign-up"),
                 ) {
-                    Text(stringResource(R.string.sign_up_on_website))
+                    Text(stringResource(R.string.new_sign_up))
                 }
             }
         }

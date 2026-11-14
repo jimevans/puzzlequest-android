@@ -20,7 +20,52 @@
     <string name="sign_in_unreachable">Can\'t reach PuzzleQuest. Check your internet connection, then try again.</string>
     <string name="sign_in_unexpected">Something went wrong at PuzzleQuest. Try again in a moment.</string>
 
-    <string name="sign_up_on_website">New to PuzzleQuest? Sign up on the website</string>
+    <string name="new_sign_up">New to PuzzleQuest? Sign up</string>
+
+    <!-- Signing up: the fields and wording follow the website's form -->
+    <string name="sign_up">Sign up</string>
+    <string name="signing_up">Signing up</string>
+    <string name="confirm_password">Confirm password</string>
+    <!-- Under the password: the shortest allowed, such as 8 -->
+    <plurals name="password_length">
+        <item quantity="one">At least %1$d character.</item>
+        <item quantity="other">At least %1$d characters.</item>
+    </plurals>
+    <string name="display_name">Display name</string>
+    <string name="email">Email</string>
+    <string name="email_will_be_checked">We\'ll send you an email to check it\'s yours.</string>
+    <string name="phone_optional">Phone number (optional)</string>
+    <string name="phone_note">US and Canadian numbers only, for now.</string>
+    <string name="allow_sms">Allow sending of SMS messages</string>
+    <!-- Word for word as the website and the SMS provider have it; translate only with the provider\'s approved wording. -->
+    <string name="sms_consent" tools:ignore="TypographyDashes">Checking this box gives The PuzzleQuest Game consent to send you mobile text (SMS) messages. These messages will come from The PuzzleQuest Game number (813-296-5411). The PuzzleQuest Game does not charge for these services, but messaging and data rates from your mobile provider may apply. You may opt out of receiving the messages at any time by replying \"STOP\", or by unchecking this checkbox. See our Privacy Policy for full details.</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <!-- Options: heads the links to the server's privacy policy and support page -->
+    <string name="about_puzzlequest">About PuzzleQuest</string>
+    <string name="support">Support</string>
+    <string name="field_required">Required.</string>
+    <!-- Beneath a password that\'s too short; the shortest allowed, such as 8 -->
+    <plurals name="password_too_short">
+        <item quantity="one">Use at least %1$d character.</item>
+        <item quantity="other">Use at least %1$d characters.</item>
+    </plurals>
+    <string name="passwords_differ">The passwords don\'t match.</string>
+    <!-- The server\'s words, such as "That user name is already in use", then what to do -->
+    <string name="sign_up_already_in_use">%1$s. Choose another, or sign in if the account is yours.</string>
+    <string name="sign_up_too_many_attempts">Too many attempts to sign up. Wait a few minutes, then try again.</string>
+    <string name="sign_up_but_not_signed_in">Your account is made, but signing in failed. Go back and sign in with it.</string>
+
+    <!-- Deleting the account: the wording follows the website\'s Delete account page -->
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_explanation">Your account goes, with your details, and you\'ll leave your teams. Your name comes out of quests\' activity logs. A quest you were playing on your own stays, for the puzzle master. This can\'t be undone.</string>
+    <string name="delete_account_password">Your password, to confirm</string>
+    <string name="delete_my_account">Delete my account</string>
+    <string name="keep_my_account">Keep my account</string>
+    <string name="deleting_account">Deleting your account</string>
+    <string name="delete_account_incorrect_password">That isn\'t your password. Check it and try again.</string>
+    <string name="delete_account_too_many_attempts">Too many attempts. Wait a few minutes, then try again.</string>
+    <string name="delete_account_not_possible">This account can\'t be deleted now. Ask PuzzleQuest for help.</string>
 
     <!-- The player's quests -->
     <string name="your_quests">Your quests</string>

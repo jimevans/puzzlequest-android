@@ -2,12 +2,14 @@ package com.thepuzzlequest.puzzlequest
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.thepuzzlequest.puzzlequest.core.DeleteAccountModel
 import com.thepuzzlequest.puzzlequest.core.OptionsModel
 import com.thepuzzlequest.puzzlequest.core.PuzzleQuestApi
 import com.thepuzzlequest.puzzlequest.core.ServerConnection
 import com.thepuzzlequest.puzzlequest.core.ServerOrigin
 import com.thepuzzlequest.puzzlequest.core.SessionStore
 import com.thepuzzlequest.puzzlequest.core.SignInModel
+import com.thepuzzlequest.puzzlequest.core.SignUpModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +50,16 @@ class AppViewModel(
     /** Options, while it's open; a new model each time it opens. */
     val options: StateFlow<OptionsModel?> = mutableOptions.asStateFlow()
 
+    private val mutableSignUp = MutableStateFlow<SignUpModel?>(null)
+
+    /** Signing up, while its screen is open; a new model each time it opens. */
+    val signUp: StateFlow<SignUpModel?> = mutableSignUp.asStateFlow()
+
+    private val mutableDeleteAccount = MutableStateFlow<DeleteAccountModel?>(null)
+
+    /** Deleting the account, while it's being confirmed; a new model each time. */
+    val deleteAccount: StateFlow<DeleteAccountModel?> = mutableDeleteAccount.asStateFlow()
+
     // The current server's; the screens are rebuilt for each server (see RootScreen).
     val session: SessionStore get() = server.value.session
     val api: PuzzleQuestApi get() = session.api
@@ -62,8 +74,11 @@ class AppViewModel(
                 val current = mutableServer.value
                 if (connected.session !== current.session) {
                     mutableServer.value = Server(connected, current.switches + 1)
-                    // Switching closes Options, as the screens are rebuilt.
+                    // Switching closes Options, as the screens are rebuilt,
+                    // and anything open for the old session.
                     mutableOptions.value = null
+                    mutableSignUp.value = null
+                    mutableDeleteAccount.value = null
                 }
                 connected.session.restore()
             }
@@ -83,6 +98,46 @@ class AppViewModel(
         viewModelScope.launch {
             // A new session needs the phone registered for its notifications.
             if (signIn.signIn(userName, password)) Push.registrar.forgetRegistration()
+        }
+    }
+
+    fun openSignUp() {
+        mutableSignUp.value = SignUpModel(session)
+    }
+
+    fun closeSignUp() {
+        mutableSignUp.value = null
+    }
+
+    /** Signs up with what's typed, then signs in; it closes once signed in. */
+    fun submitSignUp() {
+        val signUp = signUp.value ?: return
+        viewModelScope.launch {
+            if (signUp.signUp()) {
+                // A new session needs the phone registered for its notifications.
+                Push.registrar.forgetRegistration()
+                if (mutableSignUp.value === signUp) mutableSignUp.value = null
+            }
+        }
+    }
+
+    fun openDeleteAccount() {
+        mutableDeleteAccount.value = DeleteAccountModel(session)
+    }
+
+    fun closeDeleteAccount() {
+        mutableDeleteAccount.value = null
+    }
+
+    /** Deletes the account; once deleted, the app is signed out and this closes. */
+    fun confirmDeleteAccount(password: String) {
+        val delete = deleteAccount.value ?: return
+        viewModelScope.launch {
+            if (delete.delete(password)) {
+                // The session, and its notifications, went with the account.
+                Push.registrar.forgetRegistration()
+                if (mutableDeleteAccount.value === delete) mutableDeleteAccount.value = null
+            }
         }
     }
 

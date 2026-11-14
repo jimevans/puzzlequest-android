@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +73,13 @@ fun WebsiteNoteScreen(
                 modifier = Modifier.testTag("website.sign-out"),
             ) {
                 Text(stringResource(R.string.sign_out))
+            }
+            TextButton(
+                onClick = app::openDeleteAccount,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.testTag("website.delete-account"),
+            ) {
+                Text(stringResource(R.string.delete_account))
             }
         }
         OptionsButton(
