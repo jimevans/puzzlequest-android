@@ -386,6 +386,42 @@ the test server, the contract tests, and the UI tests in an Android 17
 emulator. When a run fails, the reports, test results and the server's logs
 are kept as an artifact.
 
+## Releasing
+
+Google Play takes an Android App Bundle (`.aab`), signed with an upload key.
+With Play App Signing, Google keeps the key that signs the app for phones; the
+upload key only proves an upload is yours, and can be replaced through Play
+Console if it's lost.
+
+Make the upload key once, and keep it (and its passwords) somewhere safe,
+outside the repository:
+
+```sh
+keytool -genkeypair -v -keystore ~/keys/puzzlequest-upload.jks \
+  -alias upload -keyalg RSA -keysize 4096 -validity 10000
+```
+
+Then name it in `~/.gradle/gradle.properties` (your own, not the
+repository's), which the build reads:
+
+```properties
+pq.upload.storeFile=/Users/you/keys/puzzlequest-upload.jks
+pq.upload.storePassword=…
+pq.upload.keyAlias=upload
+pq.upload.keyPassword=…
+```
+
+Without all four, release builds are left unsigned, as on CI. To build the
+bundle for Play Console:
+
+```sh
+./gradlew :app:bundleRelease
+```
+
+It's at `app/build/outputs/bundle/release/app-release.aab`. The version people
+see is `versionName` in `app/build.gradle.kts` (1.0.0 for the first release);
+`versionCode` must be higher for every upload, so raise it each time.
+
 ## Copyright
 
 Copyright © 2026 jimevans. All rights reserved. The source is public so it can
