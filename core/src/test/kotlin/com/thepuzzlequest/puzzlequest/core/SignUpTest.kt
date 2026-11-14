@@ -120,10 +120,17 @@ class SignUpTest {
             assertEquals(0, server.requestCount)
             assertEquals(SessionStore.State.Restoring, session.state.value)
 
-            // Editing a field clears what was said about it, and only it.
+            assertEquals(1, model.state.value.fieldProblemsShown)
+
+            // Editing a field clears what was said about it, and only it, and
+            // doesn't count as showing problems (which moves the keyboard).
             model.edit { it.copy(email = "e@example.com") }
             assertNull(model.state.value.fieldProblems[SignUpField.EMAIL])
             assertEquals(FieldProblem.Required, model.state.value.fieldProblems[SignUpField.USER_NAME])
+            assertEquals(1, model.state.value.fieldProblemsShown)
+
+            model.signUp()
+            assertEquals(2, model.state.value.fieldProblemsShown)
         }
 
     @Test

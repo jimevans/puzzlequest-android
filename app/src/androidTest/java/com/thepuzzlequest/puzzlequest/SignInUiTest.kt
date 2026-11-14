@@ -3,7 +3,9 @@ package com.thepuzzlequest.puzzlequest
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -13,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso
 import org.junit.Before
@@ -90,7 +93,11 @@ class SignInUiTest {
 
             // Filled in, it signs up and goes straight to the new player's home.
             val userName = TestServer.unique("signup")
-            compose.onNodeWithTag("sign-up.userName").performScrollTo().performTextReplacement(userName)
+            compose.onNodeWithTag("sign-up.userName").performScrollTo().performTextInput(userName)
+            // Fixing a field leaves the keyboard there, rather than moving it on
+            // to the next field that's wrong.
+            compose.waitForIdle()
+            compose.onNodeWithTag("sign-up.userName").assertIsFocused().assertTextContains(userName)
             compose.onNodeWithTag("sign-up.password").performScrollTo().performTextReplacement(TestServer.password)
             compose
                 .onNodeWithTag("sign-up.confirmPassword")
