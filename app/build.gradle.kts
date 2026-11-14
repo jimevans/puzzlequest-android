@@ -28,8 +28,10 @@ android {
         applicationId = "com.thepuzzlequest.puzzlequest"
         minSdk = 29
         targetSdk = 37
+        // versionName is what people see; versionCode must rise with every
+        // upload to Google Play.
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // The UI tests use the test server (scripts/start-test-server.sh),
@@ -40,8 +42,27 @@ android {
         }
     }
 
+    // The upload key, which signs what's uploaded to Google Play (Play App
+    // Signing then signs it for phones with Google's own key). Where it is
+    // and its passwords are Gradle properties kept out of the repository, in
+    // ~/.gradle/gradle.properties; without them, release builds are unsigned.
+    val uploadKey =
+        listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+            .associateWith { providers.gradleProperty("pq.upload.$it").orNull }
+    if (uploadKey.values.all { it != null }) {
+        signingConfigs {
+            create("upload") {
+                storeFile = file(uploadKey.getValue("storeFile")!!)
+                storePassword = uploadKey.getValue("storePassword")
+                keyAlias = uploadKey.getValue("keyAlias")
+                keyPassword = uploadKey.getValue("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("upload")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
