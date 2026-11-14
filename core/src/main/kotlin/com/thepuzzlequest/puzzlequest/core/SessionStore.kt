@@ -88,6 +88,20 @@ class SessionStore(
     }
 
     /**
+     * Deletes the signed-in user's own account, then forgets the session,
+     * which went with it.
+     *
+     * @throws ApiError if the server refused (such as for a wrong password),
+     *   or couldn't be reached; the session is kept then.
+     */
+    suspend fun deleteAccount(password: String) {
+        val user = (state.value as? State.SignedIn)?.user ?: return
+        api.deleteAccount(user.userName, password)
+        tokens.delete()
+        mutableState.value = State.SignedOut
+    }
+
+    /**
      * Ends the session on the server, then forgets it here, even if the
      * server couldn't be told.
      */

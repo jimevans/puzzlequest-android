@@ -196,7 +196,7 @@ fun OptionsScreen(
  * SideEffect runs after each time this is drawn, to keep the window in step.
  */
 @Composable
-private fun DialogBarIcons() {
+fun DialogBarIcons() {
     val view = LocalView.current
     val dark = isSystemInDarkTheme()
     SideEffect {

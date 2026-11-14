@@ -229,7 +229,14 @@ private fun QuestList(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.your_quests)) },
-                actions = { AccountMenu(user, onSignOut = app::signOut, onOptions = app::openOptions) },
+                actions = {
+                    AccountMenu(
+                        user,
+                        onSignOut = app::signOut,
+                        onOptions = app::openOptions,
+                        onDeleteAccount = app::openDeleteAccount,
+                    )
+                },
             )
         },
     ) { padding ->
@@ -285,12 +292,13 @@ private fun QuestList(
     }
 }
 
-/** Signing out and Options, in a menu that says who is signed in. */
+/** Signing out, Options and deleting the account, in a menu that says who is signed in. */
 @Composable
 private fun AccountMenu(
     user: SignedInUser,
     onSignOut: () -> Unit,
     onOptions: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
     var signingOut by rememberSaveable { mutableStateOf(false) }
@@ -321,6 +329,14 @@ private fun AccountMenu(
                     onOptions()
                 },
                 modifier = Modifier.testTag("home.options"),
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.delete_account), color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    open = false
+                    onDeleteAccount()
+                },
+                modifier = Modifier.testTag("home.delete-account"),
             )
         }
     }
