@@ -75,6 +75,13 @@ class SignUpModel(
         val fieldProblems: Map<SignUpField, FieldProblem> = emptyMap(),
         /** Why the last try failed, when it isn't about a field. */
         val failure: SignUpFailure? = null,
+        /**
+         * How many tries have ended with something wrong with a field: the
+         * screen moves the keyboard to the first such field when this
+         * changes, and only then, not as fields are edited (which clears
+         * what's wrong with them).
+         */
+        val fieldProblemsShown: Int = 0,
     )
 
     private val mutableState = MutableStateFlow(State())
@@ -134,7 +141,10 @@ class SignUpModel(
         val form = current.form
         val problems = check(form)
         mutableState.value = current.copy(fieldProblems = problems, failure = null)
-        if (problems.isNotEmpty()) return false
+        if (problems.isNotEmpty()) {
+            mutableState.update { it.copy(fieldProblemsShown = it.fieldProblemsShown + 1) }
+            return false
+        }
 
         mutableState.update { it.copy(isSigningUp = true) }
         val phone = form.phone.trim()
@@ -153,7 +163,7 @@ class SignUpModel(
             val fields = (error as? ApiError.Refused)?.let { fieldProblems(it.problem) }.orEmpty()
             mutableState.update {
                 if (fields.isNotEmpty()) {
-                    it.copy(isSigningUp = false, fieldProblems = fields)
+                    it.copy(isSigningUp = false, fieldProblems = fields, fieldProblemsShown = it.fieldProblemsShown + 1)
                 } else {
                     it.copy(isSigningUp = false, failure = SignUpFailure.of(error))
                 }

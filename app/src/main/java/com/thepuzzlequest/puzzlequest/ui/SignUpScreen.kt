@@ -87,7 +87,12 @@ fun SignUpScreen(
         focus.clearFocus()
         onSignUp()
     }
-    LaunchedEffect(state.fieldProblems) {
+    // After a try that found something wrong, the first field that's wrong
+    // gets the keyboard. Only then: editing a field clears what's wrong with
+    // it, and moving the keyboard on as the player types would take it from
+    // the field they're fixing.
+    LaunchedEffect(state.fieldProblemsShown) {
+        if (state.fieldProblemsShown == 0) return@LaunchedEffect
         SignUpField.entries.firstOrNull { it in state.fieldProblems }?.let { requesters.getValue(it).requestFocus() }
     }
 
