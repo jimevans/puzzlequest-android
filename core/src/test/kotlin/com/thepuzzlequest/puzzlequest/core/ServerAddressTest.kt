@@ -65,7 +65,8 @@ class ServerOriginTest {
     }
 
     @Test
-    fun `its privacy policy is on its website`() {
+    fun `its privacy policy and support page are on its website`() {
+        assertEquals("https://thepuzzlequest.com/policies/support.html", ServerOrigin.PRODUCTION.support)
         assertEquals("https://thepuzzlequest.com/policies/privacy.html", ServerOrigin.PRODUCTION.privacyPolicy)
         assertEquals(
             "http://localhost:3000/policies/privacy.html",

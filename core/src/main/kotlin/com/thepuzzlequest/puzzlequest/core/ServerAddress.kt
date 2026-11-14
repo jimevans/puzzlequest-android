@@ -27,6 +27,9 @@ class ServerOrigin private constructor(
     /** The server's privacy policy, on its website. */
     val privacyPolicy: String get() = "$url/policies/privacy.html"
 
+    /** The server's support page, on its website. */
+    val support: String get() = "$url/policies/support.html"
+
     // Two origins are the same server when their addresses are.
     override fun equals(other: Any?) = other is ServerOrigin && other.url == url
 

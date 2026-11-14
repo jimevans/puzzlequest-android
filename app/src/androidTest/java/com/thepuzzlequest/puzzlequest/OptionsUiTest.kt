@@ -45,6 +45,9 @@ class OptionsUiTest {
             compose.onNodeWithTag("options.server.custom").assertIsNotSelected()
             // A debug build offers the computer's server.
             compose.onNodeWithTag("options.server.this-computer").assertExists()
+            // The privacy policy and support are always within reach.
+            compose.onNodeWithTag("options.privacy").performScrollTo().assertTextContains("Privacy Policy")
+            compose.onNodeWithTag("options.support").performScrollTo().assertTextContains("Support")
 
             compose.onNodeWithTag("options.close").performClick()
             compose.waitUntilDoesNotExist(hasTestTag("options.current"), 10_000)

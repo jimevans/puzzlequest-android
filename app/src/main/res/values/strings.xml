@@ -40,6 +40,9 @@
     <!-- Word for word as the website and the SMS provider have it; translate only with the provider\'s approved wording. -->
     <string name="sms_consent" tools:ignore="TypographyDashes">Checking this box gives The PuzzleQuest Game consent to send you mobile text (SMS) messages. These messages will come from The PuzzleQuest Game number (813-296-5411). The PuzzleQuest Game does not charge for these services, but messaging and data rates from your mobile provider may apply. You may opt out of receiving the messages at any time by replying \"STOP\", or by unchecking this checkbox. See our Privacy Policy for full details.</string>
     <string name="privacy_policy">Privacy Policy</string>
+    <!-- Options: heads the links to the server's privacy policy and support page -->
+    <string name="about_puzzlequest">About PuzzleQuest</string>
+    <string name="support">Support</string>
     <string name="field_required">Required.</string>
     <!-- Beneath a password that\'s too short; the shortest allowed, such as 8 -->
     <plurals name="password_too_short">

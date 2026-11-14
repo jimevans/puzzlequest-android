@@ -1,5 +1,6 @@
 package com.thepuzzlequest.puzzlequest.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -161,6 +163,24 @@ fun OptionsScreen(
                 if (state.choice == ServerChoice.CUSTOM) {
                     CustomServer(model, state, isFixed, onUseCustomAddress)
                 }
+                // The policies of the server in use, on its website: Google
+                // Play asks that the privacy policy be easy to find.
+                SectionHeading(stringResource(R.string.about_puzzlequest))
+                val uriHandler = LocalUriHandler.current
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.privacy_policy)) },
+                    modifier =
+                        Modifier
+                            .clickable(role = Role.Button) { uriHandler.openUri(server.privacyPolicy) }
+                            .testTag("options.privacy"),
+                )
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.support)) },
+                    modifier =
+                        Modifier
+                            .clickable(role = Role.Button) { uriHandler.openUri(server.support) }
+                            .testTag("options.support"),
+                )
             }
         }
         state.pendingSwitch?.let { newServer ->
